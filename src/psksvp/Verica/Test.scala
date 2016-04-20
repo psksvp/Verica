@@ -8,19 +8,19 @@ object Test
 {
   import psksvp.Verica.Lang._
 
-  val P = Predicates( Binary(GreaterOrEqual(), Variable("sum"), Literal("0")),
-                      Binary(GreaterOrEqual(), Variable("i"), Literal("1")))
+  val P = Predicates( Binary(GreaterOrEqual(), Variable("sum"), IntegerValue(0)),
+                      Binary(GreaterOrEqual(), Variable("i"), IntegerValue(1)))
 
   val e = Binary(LessOrEqual(), Variable("i"), Variable("n"))
 
   val B = Sequence( Assignment(Variable("sum"), Binary(Plus(), Variable("Sum"), Variable("i"))),
-                    Assignment(Variable("i"), Binary(Plus(), Variable("i"), Literal("1"))))
+                    Assignment(Variable("i"), Binary(Plus(), Variable("i"), IntegerValue(1))))
 
-  val prog = Sequence( Assume(Binary(Greater(), Variable("n"), Literal("0"))),
-                       Assignment(Variable("sum"), Literal("0")),
-                       Assignment(Variable("i"), Literal("0")),
+  val prog = Sequence( Assume(Binary(Greater(), Variable("n"), IntegerValue(0))),
+                       Assignment(Variable("sum"), IntegerValue(0)),
+                       Assignment(Variable("i"), IntegerValue(0)),
                        While(P, Invariant(True()), e, B),
-                       Assert(Binary(Greater(), Variable("sum"), Literal("0")))
+                       Assert(Binary(Greater(), Variable("sum"), IntegerValue(0)))
                      )
 
 

@@ -80,3 +80,5 @@ case class While(predicates:Predicates,
                  stmt:Statement) extends Statement(List(expr, stmt))
 
 
+
+abstract class Formula(children:List[Node]) extends Expression(children)

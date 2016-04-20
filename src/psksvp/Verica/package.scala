@@ -15,16 +15,14 @@ package object Verica
 
   def not(expr:Expression) = Unary(Negation(), expr)
 
-  def targets(stmt:Statement):List[Variable]=
+  def targets(stmt:Statement):List[Variable] = stmt match
   {
-    stmt match
-    {
-      case Assignment(variable, _)  => List(variable)
-      //http://www.scala-lang.org/old/node/2758
-      //http://stackoverflow.com/questions/31064753/how-pass-scala-array-into-scala-vararg-method
-      case Sequence(stm, rest @ _*) => targets(stm) ::: targets(Sequence(rest: _*))
-      case _                        => Nil
-    }
+    case Assignment(variable, _)  => List(variable)
+    //http://www.scala-lang.org/old/node/2758
+    //http://stackoverflow.com/questions/31064753/how-pass-scala-array-into-scala-vararg-method
+    case Sequence(stm, rest @ _*) => targets(stm) ::: targets(Sequence(rest: _*))
+    case _                        => Nil
+
   }
 
   def havoc(variables:List[Variable]):Statement=
@@ -42,24 +40,26 @@ package object Verica
     Sequence(makeAssignmentList(variables): _*)
   }
 
-  def desugar(w:While):Sequence =
+  def desugar(w:While):Sequence = w match
   {
-    w match
-    {
-      case While(p, i, e, b) =>
-        Sequence(Assert(i),
-                  havoc(targets(b)),
-                  Assume(i),
-                  Choice(Sequence(Assume(e), b, Assert(i), Assume(False())),
-                          Assume(not(e))))
-    }
+    case While(p, i, e, b) =>
+      Sequence(Assert(i),
+                havoc(targets(b)),
+                Assume(i),
+                Choice(Sequence(Assume(e), b, Assert(i), Assume(False())),
+                        Assume(not(e))))
   }
 
   def norm(q:Expression, s:Statement):Expression=
   {
+    def subtitude(expE:Expression, expQ:Expression):Expression=
+    {
+      null
+    }
+
     s match
     {
-      case Assignment(_, _)        => and(q, True())
+      case Assignment(x, e)        => True()
       case Assert(p)               => and(q, p)
       case Assume(p)               => and(q, p)
       case Choice(a, b)            => or(norm(q, a), norm(q, b))
@@ -70,48 +70,44 @@ package object Verica
     }
   }
 
-  def traverse(c:Statement, s:Statement):Statement=
+  def traverse(c:Statement, s:Statement):Statement = s match
   {
-    s match
-    {
-      case Assignment(_, _)          => s
-      case Assert(_)                 => s
-      case Assume(_)                 => s
-      case Choice(a, b)              => Choice(traverse(c, a), traverse(c, b))
-      case Sequence(a)               => traverse(c, a)
-      case Sequence(a, b)            => val aP = traverse(c, a)
-                                        val bP = traverse(Sequence(c, aP), b)
-                                        Sequence(aP, bP)
-      case Sequence(a, b, rest @ _*) => traverse(traverse(c, Sequence(a, b)), Sequence(rest: _*))
-      case While(p, i, e, _)         => val (j, b) = infer(c, s)
-                                        While(p, Invariant(and(i, j)), e, b)
-    }
+    case Assignment(_, _)          => s
+    case Assert(_)                 => s
+    case Assume(_)                 => s
+    case Choice(a, b)              => Choice(traverse(c, a), traverse(c, b))
+    case Sequence(a)               => traverse(c, a)
+    case Sequence(a, b)            => val aP = traverse(c, a)
+                                      val bP = traverse(Sequence(c, aP), b)
+                                      Sequence(aP, bP)
+    case Sequence(a, b, rest @ _*) => traverse(traverse(c, Sequence(a, b)), Sequence(rest: _*))
+    case While(p, i, e, _)         => val (j, b) = infer(c, s)
+                                      While(p, Invariant(and(i, j)), e, b)
   }
 
-  def infer(c:Statement, s:Statement):(Expression, Statement)=
+  def infer(c:Statement, s:Statement):(Expression, Statement)= s match
   {
-    s match
-    {
-      case While(p, i, e, b) =>
-        val h = havoc(targets(b))
-        val r = alpha(norm(True(), c))
-        //while(true)
-        //{
-          val j  = gamma(r)
-          val a  = Assume(and(and(e, i.expr), j))
-          val bp = traverse(Sequence(c, h, a), b)
-          val q  = norm(True(), Sequence(c, h, a, bp))
+    case While(p, i, e, b) =>
+      val h = havoc(targets(b))
+      val r = alpha(norm(True(), c), p)
+      //while(true)
+      //{
+        val j  = gamma(r)
+        val a  = Assume(and(and(e, i.expr), j))
+        val bp = traverse(Sequence(c, h, a), b)
+        val q  = norm(True(), Sequence(c, h, a, bp))
 
-          (j, bp)
-        //}
+        (j, bp)
+      //}
 
-      case _ => sys.error("expect parm s to be a While")
-    }
+    case _ => sys.error("expect parm s to be a While")
+
   }
 
   //dummy for now
-  def alpha(expr:Expression):Array[Boolean]=
+  def alpha(expr:Expression, pred:Predicates):Array[Boolean]=
   {
+    println(s"$expr for predicate $pred")
     Array(true, false)
   }
 
