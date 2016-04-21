@@ -13,6 +13,9 @@ package object Verica
   def or(left:Expression,
          right:Expression) = Binary(Or(), left, right)
 
+  def equal(left:Expression,
+            right:Expression) = Binary(Equal(), left, right)
+
   def not(expr:Expression) = Unary(Negation(), expr)
 
   def targets(stmt:Statement):List[Variable] = stmt match
@@ -50,24 +53,29 @@ package object Verica
                         Assume(not(e))))
   }
 
-  def norm(q:Expression, s:Statement):Expression=
+  def subtitude(v:Variable, expE:Expression, expQ:Expression):Expression =
   {
-    def subtitude(expE:Expression, expQ:Expression):Expression=
+    expQ match
     {
-      null
+      case Variable(n) if n == v.name => expE
+      case Unary(op, e)               => Unary(op, subtitude(v, expE, e))
+      case Binary(op, le, re)         => Binary(op,
+                                                subtitude(v, expE, le),
+                                                subtitude(v, expE, re))
+      case _                          => expQ
     }
+  }
 
-    s match
-    {
-      case Assignment(x, e)        => True()
-      case Assert(p)               => and(q, p)
-      case Assume(p)               => and(q, p)
-      case Choice(a, b)            => or(norm(q, a), norm(q, b))
-      case Sequence(a)             => norm(q, a)
-      case Sequence(a, b)          => norm(norm(q, a), b)
-      case Sequence(a, b, rest@_*) => norm(norm(q, Sequence(a, b)), Sequence(rest:_*))
-      case sw:While                => norm(q, desugar(sw))
-    }
+  def norm(q:Expression, s:Statement):Expression = s match
+  {
+    case Assignment(v, e)        => and(True(), subtitude(v, e, q))
+    case Assert(p)               => and(q, p)
+    case Assume(p)               => and(q, p)
+    case Choice(a, b)            => or(norm(q, a), norm(q, b))
+    case Sequence(a)             => norm(q, a)
+    case Sequence(a, b)          => norm(norm(q, a), b)
+    case Sequence(a, b, rest@_*) => norm(norm(q, Sequence(a, b)), Sequence(rest:_*))
+    case sw:While                => norm(q, desugar(sw))
   }
 
   def traverse(c:Statement, s:Statement):Statement = s match

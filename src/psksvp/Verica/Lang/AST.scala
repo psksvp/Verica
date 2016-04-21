@@ -79,6 +79,8 @@ case class While(predicates:Predicates,
                  expr:Expression,
                  stmt:Statement) extends Statement(List(expr, stmt))
 
+case class Module(name:String,
+                  sequence:Sequence) extends Node(List(sequence))
 
 
 abstract class Formula(children:List[Node]) extends Expression(children)

@@ -5,39 +5,31 @@ package psksvp.Verica.Lang
   */
 object Prettified
 {
-  def apply(n:Node):String =
+  def apply(n:Node):String = n match
   {
-
-    n match
-    {
-      case s:Statement if false == s.isInstanceOf[Sequence] => indentString + pretty(n)
-      case _                                                => pretty(n)
-    }
+    case s:Statement if false == s.isInstanceOf[Sequence] => indentString + pretty(n)
+    case _                                                => pretty(n)
   }
 
-  def pretty(n:Node):String =
+  def pretty(n:Node):String = n match
   {
-    n match
-    {
-      case op:Operator      => op.symbol
-      case v:Value[_]       => v.value.toString
-      case Variable(v)      => v
-      case Literal(l)       => l
-      case Assert(e)        => s"Assert(${apply(e)})"
-      case Assume(e)        => s"Assume(${apply(e)})"
-      case Binary(op, l, r) => s"${apply(l)} ${apply(op)} ${apply(r)}"
-      case Unary(op, opd)   => s"${apply(op)}${apply(opd)}"
-      case Assignment(v, e) => s"${apply(v)} := ${apply(e)}"
-      case Choice(a, b)     => s"${apply(a)} ☐ ${apply(b)}"
-      case Invariant(e)     => apply(e)
-      case s:Sequence       => pretty(s)
-      case p:Predicates     => pretty(p)
-      case While(p, i, e, s)=> indent()
-                               val out = s"{${apply(p)}, ${apply(i)}} while(${apply(e)})\n${apply(s)}"
-                               outdent()
-                               out
-
-    }
+    case op:Operator      => op.symbol
+    case v:Value[_]       => v.value.toString
+    case Variable(v)      => v
+    case Literal(l)       => l
+    case Assert(e)        => s"Assert(${apply(e)})"
+    case Assume(e)        => s"Assume(${apply(e)})"
+    case Binary(op, l, r) => s"${apply(l)} ${apply(op)} ${apply(r)}"
+    case Unary(op, opd)   => s"${apply(op)}${apply(opd)}"
+    case Assignment(v, e) => s"${apply(v)} := ${apply(e)}"
+    case Choice(a, b)     => s"${apply(a)} ☐ ${apply(b)}"
+    case Invariant(e)     => apply(e)
+    case s:Sequence       => pretty(s)
+    case p:Predicates     => pretty(p)
+    case While(p, i, e, s)=> indent()
+                             val out = s"{${apply(p)}, ${apply(i)}} while(${apply(e)})\n${apply(s)}"
+                             outdent()
+                             out
   }
 
   def pretty(seq:Sequence): String =
