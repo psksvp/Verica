@@ -109,7 +109,7 @@ object Parser extends JavaTokenParsers with PackratParsers
   {
     parseAll(module, src) match
     {
-      case Success(topNode, _) => topNode.asInstanceOf[Module]
+      case Success(topNode, _) => topNode //.asInstanceOf[Module]
       case f =>
         sys.error("error while parsing: " + f)
     }
