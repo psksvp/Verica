@@ -5,6 +5,8 @@ package psksvp.Verica.Lang
   */
 object Prettified
 {
+
+
   def apply(n:Node):String = n match
   {
     case s:Statement if false == s.isInstanceOf[Sequence] => indentString + pretty(n)
@@ -19,7 +21,7 @@ object Prettified
     case Literal(l)       => l
     case Assert(e)        => s"Assert(${apply(e)})"
     case Assume(e)        => s"Assume(${apply(e)})"
-    case Binary(op, l, r) => s"${apply(l)} ${apply(op)} ${apply(r)}"
+    case Binary(op, l, r) => s"(${apply(l)} ${apply(op)} ${apply(r)})"
     case Unary(op, opd)   => s"${apply(op)}${apply(opd)}"
     case Assignment(v, e) => s"${apply(v)} := ${apply(e)}"
     case Choice(a, b)     => s"${apply(a)} ☐ ${apply(b)}"
@@ -30,15 +32,34 @@ object Prettified
                              val out = s"{${apply(p)}, ${apply(i)}} while(${apply(e)})\n${apply(s)}"
                              outdent()
                              out
+    case a:If             => pretty(a)
+    case Module(n, s)     => s"Module($n)\n${apply(s)}"
+  }
+
+  def pretty(iF:If): String =
+  {
+    var out = "if(" + apply(iF.test) + ")\n"
+    indent()
+    out = out + apply(iF.stmtA)
+    out = out + indentString + "\nelse\n"
+    outdent()
+
+    indent()
+    out = out + apply(iF.stmtB)
+    outdent()
+    out
   }
 
   def pretty(seq:Sequence): String =
   {
-    var out = ""
+    var out = indentString + "begin\n"
+    indent()
     for(s <- seq.stmts)
     {
       out = out.concat(s"${apply(s)}\n")
     }
+    outdent()
+    out = indentString + out.concat("end\n")
     out
   }
 

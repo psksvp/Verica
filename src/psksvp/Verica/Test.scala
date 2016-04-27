@@ -26,7 +26,26 @@ object Test
 
   def main(args:Array[String]):Unit=
   {
-    println(prog)
-    traverse(Empty(), prog)
+    //println(prog)
+    //traverse(Empty(), prog)
+
+
+    val prog =
+      """
+        |module(main)
+        |begin
+        |  if(x != 0)
+        |    z := x
+        |  else
+        |    z := x + 1
+        |end
+      """.stripMargin
+
+    val m = Parser.parse(prog)
+    println(m)
+    val p = makePredicate("z > 0")
+    println(p)
+    println(wp(m.sequence, p))
+    println(Lispified(wp(m.sequence, p)))
   }
 }

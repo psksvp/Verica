@@ -65,7 +65,6 @@ case class Predicates(exprs:Expression*) extends Expression(exprs.toList)
   def apply(index:Int) = exprs(index)
 }
 
-
 abstract class Statement(children:List[Node]) extends Node(children)
 case class Empty() extends Statement(Nil)
 case class Assignment(variable:Variable, expr:Expression) extends Statement(List(variable, expr))
@@ -78,6 +77,10 @@ case class While(predicates:Predicates,
                  invariant:Invariant,
                  expr:Expression,
                  stmt:Statement) extends Statement(List(expr, stmt))
+
+case class If(test:Expression,
+              stmtA:Statement,
+              stmtB:Statement=Empty()) extends Statement(List(test, stmtA, stmtB))
 
 case class Module(name:String,
                   sequence:Sequence) extends Node(List(sequence))

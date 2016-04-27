@@ -7,6 +7,8 @@ package object Verica
 {
   import psksvp.Verica.Lang._
 
+  type Predicate = Expression
+
   def and(left:Expression,
           right:Expression) = Binary(And(), left, right)
 
@@ -53,6 +55,14 @@ package object Verica
                         Assume(not(e))))
   }
 
+  /**
+    * subtitute variable v in ExpQ with expE
+    *
+    * @param v
+    * @param expE
+    * @param expQ
+    * @return
+    */
   def subtitude(v:Variable, expE:Expression, expQ:Expression):Expression =
   {
     expQ match
@@ -66,9 +76,9 @@ package object Verica
     }
   }
 
-  def norm(q:Expression, s:Statement):Expression = s match
+  def norm(q:Predicate, s:Statement):Predicate = s match
   {
-    case Assignment(v, e)        => and(True(), subtitude(v, e, q))
+    case Assignment(v, e)        => and(True(), substituteVariable(v, inPredicate = q, withExp = e))
     case Assert(p)               => and(q, p)
     case Assume(p)               => and(q, p)
     case Choice(a, b)            => or(norm(q, a), norm(q, b))
@@ -123,5 +133,38 @@ package object Verica
   def gamma(absDom:Array[Boolean]):Expression=
   {
     False()
+  }
+
+
+  def substituteVariable(v:Variable, inPredicate:Predicate, withExp:Expression):Predicate=
+  {
+    def substitutionOf(e:Expression):Expression=
+    {
+      e match
+      {
+        case Variable(name) if name == v.name => withExp
+        case Binary(op, l, r)                 => Binary(op, substitutionOf(l), substitutionOf(r))
+        case Unary(op, exp)                   => Unary(op, substitutionOf(exp))
+        case _                                => e
+      }
+    }
+
+    inPredicate match
+    {
+      case Binary(op, l, r) => Binary(op, substitutionOf(l), substitutionOf(r))
+      case Unary(op, e)     => Unary(op, substitutionOf(e))
+      case _                => inPredicate
+    }
+
+  }
+
+  def makePredicate(src:String):Predicate=Parser.parsePreidcate(src)
+
+  def wp(stmt:Statement, q:Predicate):Predicate = stmt match
+  {
+    case Assignment(v, e)          => substituteVariable(v, inPredicate = q, withExp = e)
+    case If(t, a, b)               => or(and(t, wp(a, q)), and(not(t), wp(b, q)))
+    case Sequence(s1)              => wp(s1, q)
+    case Sequence(s1, rest@_*)     => wp(s1, wp(Sequence(rest:_*), q))
   }
 }

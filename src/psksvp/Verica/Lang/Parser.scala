@@ -8,7 +8,7 @@ object Parser extends JavaTokenParsers with PackratParsers
 {
   lazy val variable:PackratParser[Variable] = ident ^^
   {
-    case id => Variable(id.toString)
+    case id => Variable(id)
   }
 
   lazy val integer:PackratParser[IntegerValue] = decimalNumber ^^
@@ -29,14 +29,9 @@ object Parser extends JavaTokenParsers with PackratParsers
     case "¬"  => Negation()
   }
 
-  lazy val binaryOperator:PackratParser[Operator] = ("+"|"-"|"*"|"/"|"=="|
-                                                     ">"|"<"|">="|"<="|"!="|
-                                                     "⋁"|"⋀") ^^
+  lazy val binaryOperator:PackratParser[Operator] = ("⋁"|"⋀"|">"|"<"|
+                                                     ">="|"<="|"=="|"!="|"+"|"-"|"*"|"/") ^^
   {
-    case "+"  => Plus()
-    case "-"  => Minus()
-    case "*"  => Multiply()
-    case "/"  => Division()
     case "==" => Equal()
     case ">"  => Greater()
     case "<"  => Less()
@@ -45,6 +40,10 @@ object Parser extends JavaTokenParsers with PackratParsers
     case "!=" => NotEqual()
     case "⋁"  => Or()
     case "⋀"  => And()
+    case "+"  => Plus()
+    case "-"  => Minus()
+    case "*"  => Multiply()
+    case "/"  => Division()
   }
 
   /////////////////
@@ -69,13 +68,13 @@ object Parser extends JavaTokenParsers with PackratParsers
     case p:Seq[Expression] => psksvp.Verica.Lang.Predicates(p:_*)
   }
 
-  lazy val expression:PackratParser[Expression] = variable|integer|bool|unary|binary
+  lazy val expression:PackratParser[Expression] = binary|unary|variable|bool|integer
 
   /////////////////////////////
   // statement
-  lazy val statement:PackratParser[Statement] = assignment|assert|assume|sequence|whileLoop
+  lazy val statement:PackratParser[Statement] = assignment|assert|assume|sequence|whileLoop|ifElse
 
-  lazy val assignment:PackratParser[Assignment] = (variable ~ ":=" ~ expression) ^^
+  lazy val assignment:PackratParser[Assignment] = (variable ~ ":=" ~expression) ^^
   {
     case v ~ ":=" ~ exp => Assignment(v, exp)
   }
@@ -100,10 +99,22 @@ object Parser extends JavaTokenParsers with PackratParsers
     case exp ~ stm => While(null, null, exp, stm)
   }
 
+
+  lazy val ifElse:PackratParser[If] = "if" ~> ("(" ~> expression <~ ")") ~ statement ~ (("else" ~> statement)?) ^^
+  {
+      case expr ~ stmTrue ~ stmFalseOption =>
+        stmFalseOption match
+        {
+          case Some(stmFalse) => If(expr, stmTrue, stmFalse)
+          case None => If(expr, stmTrue)
+        }
+  }
+
   lazy val module:PackratParser[Module] = (("module(" ~> ident <~ ")") ~ sequence) ^^
   {
     case name ~ seqq => Module(ident.toString, seqq)
   }
+
 
   def parse(src:String):Module=
   {
@@ -114,4 +125,16 @@ object Parser extends JavaTokenParsers with PackratParsers
         sys.error("error while parsing: " + f)
     }
   }
+
+  def parseBinaryExpression(src:String):Binary=
+  {
+    parseAll(binary, src) match
+    {
+      case Success(topNode, _) => topNode
+      case f =>
+        sys.error("error while parsing: " + f)
+    }
+  }
+
+  def parsePreidcate(src:String):Binary=parseBinaryExpression(src)
 }
