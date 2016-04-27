@@ -32,6 +32,7 @@ case class NotEqual() extends Operator("!=")
 case class Negation() extends Operator("¬")
 case class Or() extends Operator("⋁")
 case class And() extends Operator("⋀")
+case class Imply() extends Operator("->")
 
 abstract class Expression(children:List[Node]) extends Node(children)
 
@@ -71,6 +72,9 @@ case class Assignment(variable:Variable, expr:Expression) extends Statement(List
 case class Assert(expr:Expression) extends Statement(List(expr))
 case class Assume(expr:Expression) extends Statement(List(expr))
 case class Sequence(stmts:Statement*) extends Statement(stmts.toList)
+{
+  def count=stmts.size
+}
 case class Choice(stmtA:Statement, stmtB:Statement) extends Statement(List(stmtA, stmtB))
 
 case class While(predicates:Predicates,

@@ -41,11 +41,21 @@ object Test
         |end
       """.stripMargin
 
-    val m = Parser.parse(prog)
+    val prog1 =
+      """
+        |module(main)
+        |begin
+        |  x := x + 1
+        |end
+      """.stripMargin
+
+    val m = Parser.parse(prog1)
     println(m)
-    val p = makePredicate("z > 0")
+    val p = makePredicate("x == 0")
+    val q = makePredicate("x == 1")
     println(p)
-    println(wp(m.sequence, p))
-    println(Lispified(wp(m.sequence, p)))
+    println(q)
+    println(vc(p, m.sequence, q))
+    //println(Lispified(wp(m.sequence, p)))
   }
 }

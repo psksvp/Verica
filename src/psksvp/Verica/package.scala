@@ -18,6 +18,9 @@ package object Verica
   def equal(left:Expression,
             right:Expression) = Binary(Equal(), left, right)
 
+  def imply(left:Expression,
+            right:Expression) = Binary(Imply(), left, right)
+
   def not(expr:Expression) = Unary(Negation(), expr)
 
   def targets(stmt:Statement):List[Variable] = stmt match
@@ -55,26 +58,6 @@ package object Verica
                         Assume(not(e))))
   }
 
-  /**
-    * subtitute variable v in ExpQ with expE
-    *
-    * @param v
-    * @param expE
-    * @param expQ
-    * @return
-    */
-  def subtitude(v:Variable, expE:Expression, expQ:Expression):Expression =
-  {
-    expQ match
-    {
-      case Variable(n) if n == v.name => expE
-      case Unary(op, e)               => Unary(op, subtitude(v, expE, e))
-      case Binary(op, le, re)         => Binary(op,
-                                                subtitude(v, expE, le),
-                                                subtitude(v, expE, re))
-      case _                          => expQ
-    }
-  }
 
   def norm(q:Predicate, s:Statement):Predicate = s match
   {
@@ -95,10 +78,11 @@ package object Verica
     case Assume(_)                 => s
     case Choice(a, b)              => Choice(traverse(c, a), traverse(c, b))
     case Sequence(a)               => traverse(c, a)
+    case Sequence(a, rest@_*)      => val aP = traverse(c, a)
+                                      traverse(aP, Sequence(rest: _*))
     case Sequence(a, b)            => val aP = traverse(c, a)
                                       val bP = traverse(Sequence(c, aP), b)
                                       Sequence(aP, bP)
-    case Sequence(a, b, rest @ _*) => traverse(traverse(c, Sequence(a, b)), Sequence(rest: _*))
     case While(p, i, e, _)         => val (j, b) = infer(c, s)
                                       While(p, Invariant(and(i, j)), e, b)
   }
@@ -136,6 +120,14 @@ package object Verica
   }
 
 
+  /**
+    * substitute variable v in inPredicate with expression withExp
+    *
+    * @param v
+    * @param inPredicate
+    * @param withExp
+    * @return an expression
+    */
   def substituteVariable(v:Variable, inPredicate:Predicate, withExp:Expression):Predicate=
   {
     def substitutionOf(e:Expression):Expression=
@@ -160,11 +152,24 @@ package object Verica
 
   def makePredicate(src:String):Predicate=Parser.parsePreidcate(src)
 
-  def wp(stmt:Statement, q:Predicate):Predicate = stmt match
+  def weakestPrecondition(stmt:Statement, q:Predicate):Predicate = stmt match
   {
     case Assignment(v, e)          => substituteVariable(v, inPredicate = q, withExp = e)
-    case If(t, a, b)               => or(and(t, wp(a, q)), and(not(t), wp(b, q)))
-    case Sequence(s1)              => wp(s1, q)
-    case Sequence(s1, rest@_*)     => wp(s1, wp(Sequence(rest:_*), q))
+    case If(t, a, b)               => or(and(t, weakestPrecondition(a, q)),
+                                         and(not(t), weakestPrecondition(b, q)))
+    case Sequence(s1)              => weakestPrecondition(s1, q)
+    case Sequence(s1, rest@_*)     => weakestPrecondition(s1, weakestPrecondition(Sequence(rest:_*), q))
+  }
+
+  def wp(stmt:Statement, q:Predicate) = weakestPrecondition(stmt, q)
+
+
+  def vc(p:Expression, stm:Statement, q:Expression):Expression=stm match
+  {
+    case Assignment(v, e) => imply(p, substituteVariable(v, inPredicate = q, withExp = e))
+    case If(s, c1, c2)    => and(vc(and(p, s), c1, q), vc(and(p, not(s)), c2,  q))
+    case Sequence(s)      => vc(p, s, q)
+    case s:Sequence       => imply(p, and(vc(p, Sequence(s.stmts.take(s.count - 1):_*), q),
+                                          vc(p, s.stmts.last, q)))
   }
 }
