@@ -40,8 +40,8 @@ package object Verica
   def equal(left:Expression,
             right:Expression) = Binary(Equal(), left, right)
 
-  def imply(left:Expression,
-            right:Expression) = Binary(Implies(), left, right)
+  def implies(left:Expression,
+             right:Expression) = Binary(Implies(), left, right)
 
   def not(expr:Expression) = Unary(Negation(), expr)
 
@@ -188,10 +188,10 @@ package object Verica
 
   def vc(p:Expression, stm:Statement, q:Expression):Expression=stm match
   {
-    case Assignment(v, e) => imply(p, substituteVariable(v, inPredicate = q, withExp = e))
+    case Assignment(v, e) => implies(p, substituteVariable(v, inPredicate = q, withExp = e))
     case If(s, c1, c2)    => and(vc(and(p, s), c1, q), vc(and(p, not(s)), c2,  q))
     case Sequence(s)      => vc(p, s, q)
-    case s:Sequence       => imply(p, and(vc(p, Sequence(s.stmts.take(s.count - 1):_*), q),
+    case s:Sequence       => implies(p, and(vc(p, Sequence(s.stmts.take(s.count - 1):_*), q),
                                           vc(p, s.stmts.last, q)))
   }
 }

@@ -47,7 +47,7 @@ object Test
 
     //val m = Parser.parse(prog1)
 
-    Parser.parseExpression("1 + 2")
+    println(Parser.parseExpression("""2 + 2 \/ 8 - 3"""))
     //println( norm(True(), "{ assume(i=0)  assume(r=0)  }"))
 
     /*
