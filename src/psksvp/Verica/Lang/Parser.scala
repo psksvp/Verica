@@ -12,36 +12,36 @@ object Parser extends JavaTokenParsers with PackratParsers
   /////////////////
   // expression
   lazy val expression: Parser[Expression] = termRelation ~ rep(logicOP ~ termRelation) ^^
+  {
+    case t ~ ts => ts.foldLeft(t)
     {
-      case t ~ ts => ts.foldLeft(t)
-      {
-        case (t1, "->" ~ t2)     => Binary(Implies(), t1, t2)
-        case (t1, """/\""" ~ t2) => Binary(And(), t1, t2)
-        case (t1, """\/""" ~ t2) => Binary(Or(), t1, t2)
-      }
+      case (t1, "->" ~ t2)     => Binary(Implies(), t1, t2)
+      case (t1, """/\""" ~ t2) => Binary(And(), t1, t2)
+      case (t1, """\/""" ~ t2) => Binary(Or(), t1, t2)
     }
+  }
 
   lazy val termRelation: Parser[Expression] = termNumericP1 ~ rep(relationOP ~ termNumericP1) ^^
+  {
+    case t ~ ts => ts.foldLeft(t)
     {
-      case t ~ ts => ts.foldLeft(t)
-      {
-        case (t1, "=" ~ t2)  => Binary(Equal(),t1, t2)
-        case (t1, "!=" ~ t2) => Binary(NotEqual(),t1, t2)
-        case (t1, ">" ~ t2)  => Binary(Greater(), t1, t2)
-        case (t1, ">=" ~ t2) => Binary(GreaterOrEqual(), t1, t2)
-        case (t1, "<" ~ t2)  => Binary(Less(), t1, t2)
-        case (t1, "<=" ~ t2) => Binary(LessOrEqual(), t1, t2)
-      }
+      case (t1, "=" ~ t2)  => Binary(Equal(),t1, t2)
+      case (t1, "!=" ~ t2) => Binary(NotEqual(),t1, t2)
+      case (t1, ">" ~ t2)  => Binary(Greater(), t1, t2)
+      case (t1, ">=" ~ t2) => Binary(GreaterOrEqual(), t1, t2)
+      case (t1, "<" ~ t2)  => Binary(Less(), t1, t2)
+      case (t1, "<=" ~ t2) => Binary(LessOrEqual(), t1, t2)
     }
+  }
 
   lazy val termNumericP1: Parser[Expression] = termNumericP2 ~ rep(numericP1OP ~ termNumericP2) ^^
+  {
+    case t ~ ts => ts.foldLeft(t)
     {
-      case t ~ ts => ts.foldLeft(t)
-      {
-        case (t1, "+" ~ t2) => Binary(Plus(), t1, t2)
-        case (t1, "-" ~ t2) => Binary(Minus(), t1, t2)
-      }
+      case (t1, "+" ~ t2) => Binary(Plus(), t1, t2)
+      case (t1, "-" ~ t2) => Binary(Minus(), t1, t2)
     }
+  }
 
   lazy val termNumericP2: Parser[Expression] = factor ~ rep(numericP2OP ~ factor) ^^
   {
@@ -62,7 +62,7 @@ object Parser extends JavaTokenParsers with PackratParsers
 
   lazy val numericP2OP = "*" | "/" ^^ {t => t}
   lazy val numericP1OP = "+" | "-" ^^ {t => t}
-  lazy val relationOP = "=" | "!=" | "<" | "<=" | ">" | ">=" ^^ {t => t}
+  lazy val relationOP = "=" | "!=" | "<=" | "<" | ">=" | ">" ^^ {t => t}
   lazy val logicOP = """/\""" | """\/""" | "->" ^^ {t => t}
 
 
