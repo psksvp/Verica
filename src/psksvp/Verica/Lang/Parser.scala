@@ -6,57 +6,42 @@ import scala.util.parsing.combinator._
   */
 object Parser extends JavaTokenParsers with PackratParsers
 {
-  lazy val variable:PackratParser[Variable] = ident ^^
-  {
-    case id => Variable(id)
-  }
-
-  lazy val integer:PackratParser[IntegerValue] = decimalNumber ^^
-  {
-    case x => IntegerValue(x.toInt)
-  }
-
-  lazy val bool:PackratParser[Value[Boolean]] = ("true" | "false") ^^
-  {
-    case "true" => True()
-    case "false" => False()
-  }
-
-  lazy val unaryOperator:PackratParser[Operator] = ("+"|"-"|"¬") ^^
-  {
-    case "+"  => Plus()
-    case "-"  => Minus()
-    case "¬"  => Negation()
-  }
-
-  lazy val binaryOperator:PackratParser[Operator] = ("⋁"|"⋀"|">"|"<"|
-                                                     ">="|"<="|"=="|"!="|"+"|"-"|"*"|"/") ^^
-  {
-    case "==" => Equal()
-    case ">"  => Greater()
-    case "<"  => Less()
-    case ">=" => GreaterOrEqual()
-    case "<=" => LessOrEqual()
-    case "!=" => NotEqual()
-    case "⋁"  => Or()
-    case "⋀"  => And()
-    case "+"  => Plus()
-    case "-"  => Minus()
-    case "*"  => Multiply()
-    case "/"  => Division()
-  }
+  lazy val identifier = regex("[a-zA-Z][a-zA-Z0-9_]*".r)
+  lazy val integer = regex("[0-9]+".r)
 
   /////////////////
   // expression
-  lazy val unary:PackratParser[Unary] = (unaryOperator ~ expression) ^^
-  {
-    case op ~ exp => Unary(op, exp)
-  }
 
-  lazy val binary:PackratParser[Binary] = expression ~ binaryOperator ~ expression ^^
-  {
-    case exp1 ~ op ~ exp2 => Binary(op, exp1, exp2)
-  }
+  lazy val expression:PackratParser[Expression] =
+    expression ~ ("&" ~> expression2) ^^  { case l ~ r => Binary(And(), l, r)}   |
+    expression ~ ("|" ~> expression2) ^^  { case l ~ r => Binary(Or(), l, r)}    |
+    expression ~ ("->" ~> expression2) ^^ { case l ~ r => Binary(Implies(), l, r)} |  expression2
+
+  lazy val expression2:PackratParser[Expression] =
+    expression1 ~ ("!=" ~> expression1) ^^ {case l ~ r => Binary(NotEqual(), l, r)} |
+    expression1 ~ ("=" ~> expression1) ^^ {case l ~ r => Binary(Equal(), l, r)} |
+    expression1 ~ ("<" ~> expression1) ^^ {case l ~ r => Binary(Less(), l, r)} |
+    expression1 ~ ("<=" ~> expression1) ^^ {case l ~ r => Binary(LessOrEqual(), l, r)} |
+    expression1 ~ (">" ~> expression1) ^^ {case l ~ r => Binary(Greater(), l, r)} |
+    expression1 ~ (">=" ~> expression1) ^^ {case l ~ r => Binary(GreaterOrEqual(), l, r)} |expression1
+
+  lazy val expression1:PackratParser[Expression] =
+    expression1 ~ ("+" ~> expression0) ^^ {case l ~ r => Binary(Plus(), l, r)} |
+    expression1 ~ ("-" ~> expression0) ^^ {case l ~ r => Binary(Minus(), l, r)} | expression0
+
+  lazy val expression0:PackratParser[Expression] =
+    expression0 ~ ("/" ~> factor) ^^ {case l ~ r => Binary(Division(), l, r)}
+    expression0 ~ ("*" ~> factor) ^^ {case l ~ r => Binary(Multiply(), l, r)} | factor
+
+  lazy val factor:PackratParser[Expression] =
+    integer           ^^ {case s  => IntegerValue(s.toInt)} |
+    "true"            ^^ {case _  => True()}                |
+    "false"           ^^ {case _  => False()}               |
+    identifier        ^^ {case id => Variable(id)}          |
+    "~" ~> expression ^^ {case e  => Unary(Negation(), e)}  |
+    "(" ~> expression <~ ")"
+
+
 
   lazy val invariant:PackratParser[Invariant] = expression ^^
   {
@@ -68,28 +53,26 @@ object Parser extends JavaTokenParsers with PackratParsers
     case p:Seq[Expression] => psksvp.Verica.Lang.Predicates(p:_*)
   }
 
-  lazy val expression:PackratParser[Expression] = binary|unary|variable|bool|integer
-
   /////////////////////////////
   // statement
-  lazy val statement:PackratParser[Statement] = assignment|assert|assume|sequence|whileLoop|ifElse
+  lazy val statement:PackratParser[Statement] = assert|assume|whileLoop|ifElse|assignment|sequence
 
-  lazy val assignment:PackratParser[Assignment] = (variable ~ ":=" ~expression) ^^
+  lazy val assignment:PackratParser[Assignment] = identifier ~ (":=" ~> expression) ^^
   {
-    case v ~ ":=" ~ exp => Assignment(v, exp)
+    case v ~ exp => Assignment(Variable(v), exp)
   }
 
-  lazy val assert:PackratParser[Assert] = ("assert" ~ "(" ~expression~")") ^^
+  lazy val assert:PackratParser[Assert] = "assert" ~> ("(" ~> expression <~ ")") ^^
   {
-    case "assert" ~"(" ~ exp ~ ")" => Assert(exp)
+    case exp  => Assert(exp)
   }
 
-  lazy val assume:PackratParser[Assert] = ("assume" ~ "(" ~expression~")") ^^
+  lazy val assume:PackratParser[Assume] = "assume" ~> ("(" ~> expression <~ ")") ^^
   {
-    case "assume" ~"(" ~ exp ~ ")" => Assert(exp)
+    case exp  => Assume(exp)
   }
 
-  lazy val sequence:PackratParser[Sequence] = ("begin" ~> (statement *) <~ "end") ^^
+  lazy val sequence:PackratParser[Sequence] = ("{" ~> (statement *) <~ "}") ^^
   {
     case s:Seq[Statement] => Sequence(s: _*)
   }
@@ -102,37 +85,55 @@ object Parser extends JavaTokenParsers with PackratParsers
 
   lazy val ifElse:PackratParser[If] = "if" ~> ("(" ~> expression <~ ")") ~ statement ~ (("else" ~> statement)?) ^^
   {
-      case expr ~ stmTrue ~ stmFalseOption =>
-        stmFalseOption match
-        {
-          case Some(stmFalse) => If(expr, stmTrue, stmFalse)
-          case None => If(expr, stmTrue)
-        }
+    case expr ~ stmTrue ~ stmFalseOption =>
+      stmFalseOption match
+      {
+        case Some(stmFalse) => If(expr, stmTrue, stmFalse)
+        case None => If(expr, stmTrue)
+      }
   }
 
-  lazy val module:PackratParser[Module] = (("module(" ~> ident <~ ")") ~ sequence) ^^
+  lazy val module:PackratParser[Module] = (("module(" ~> identifier <~ ")") ~ sequence) ^^
   {
-    case name ~ seqq => Module(ident.toString, seqq)
+    case name ~ seqq => Module(name, seqq)
   }
 
 
+
+  //////////////////////////////////////////////////
   def parse(src:String):Module=
   {
     parseAll(module, src) match
     {
       case Success(topNode, _) => topNode //.asInstanceOf[Module]
-      case f =>
-        sys.error("error while parsing: " + f)
+      case f                   => sys.error("error while parsing: " + f)
+    }
+  }
+
+  def parseStatement(src:String):Statement=
+  {
+    parseAll(statement, src) match
+    {
+      case Success(topNode, _) => topNode
+      case f                   => sys.error("error while parsing: " + f)
+    }
+  }
+
+  def parseExpression(src:String):Expression=
+  {
+    parseAll(expression, src) match
+    {
+      case Success(topNode, _) => topNode
+      case f                   => sys.error("error while parsing: " + f)
     }
   }
 
   def parseBinaryExpression(src:String):Binary=
   {
-    parseAll(binary, src) match
+    parseExpression(src) match
     {
-      case Success(topNode, _) => topNode
-      case f =>
-        sys.error("error while parsing: " + f)
+      case b:Binary => b
+      case _        => sys.error("expression is not a Binary expression")
     }
   }
 

@@ -26,36 +26,41 @@ object Test
 
   def main(args:Array[String]):Unit=
   {
-    //println(prog)
-    //traverse(Empty(), prog)
-
-
-    val prog =
+    val prog9 =
       """
         |module(main)
-        |begin
+        |{
         |  if(x != 0)
         |    z := x
         |  else
         |    z := x + 1
-        |end
+        |}
       """.stripMargin
 
     val prog1 =
       """
         |module(main)
-        |begin
+        |{
         |  x := x + 1
-        |end
+        |}
       """.stripMargin
 
-    val m = Parser.parse(prog1)
+    //val m = Parser.parse(prog1)
+
+    Parser.parseExpression("1 + 2")
+    //println( norm(True(), "{ assume(i=0)  assume(r=0)  }"))
+
+    /*
     println(m)
-    val p = makePredicate("x == 0")
-    val q = makePredicate("x == 1")
+    val p = makePredicate("(x == 0)")
+    val q = makePredicate("(x == 1)")
     println(p)
     println(q)
     println(vc(p, m.sequence, q))
     //println(Lispified(wp(m.sequence, p)))
+
+    println( norm(True(), "{ assume(i=0)  assume(r=0)  }")) */
+    //import psksvp.Verica.QuantifierElimination._
+    //val h = Solve(Exists(Variable("x"), Variable("xp")), SuchThat("""((x = xp - 5) && (xp > 15))"""))
   }
 }

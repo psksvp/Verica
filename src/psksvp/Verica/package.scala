@@ -8,7 +8,29 @@ package object Verica
   import psksvp.Verica.Lang._
 
   type Predicate = Expression
+  implicit def string2Statement(src:String):Statement=Parser.parseStatement(src)
+  //implicit def string2Expression(src:String):Expression=Parser.parseExpression(src)
+  //implicit def string2Predicate(src:String):Predicate=Parser.parseExpression(src)
 
+  implicit def string2ListOfVariable(src:String):Seq[Variable]=
+  {
+    var r:List[Variable] = Nil
+    for(s <- src.split(","))
+      r = r :+ Variable(s)
+
+    r
+  }
+
+  def listOfVariablesIn(expression: Expression):List[Variable] = expression match
+  {
+    case v:Variable       => List(v)
+    case Binary(op, l, r) => listOfVariablesIn(l) ::: listOfVariablesIn(r)
+    case Unary(op, e)     => listOfVariablesIn(e)
+    case _                => Nil
+  }
+
+
+  ////////////////////////////////////////////
   def and(left:Expression,
           right:Expression) = Binary(And(), left, right)
 
@@ -19,7 +41,7 @@ package object Verica
             right:Expression) = Binary(Equal(), left, right)
 
   def imply(left:Expression,
-            right:Expression) = Binary(Imply(), left, right)
+            right:Expression) = Binary(Implies(), left, right)
 
   def not(expr:Expression) = Unary(Negation(), expr)
 

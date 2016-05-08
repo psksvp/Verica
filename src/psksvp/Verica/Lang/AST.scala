@@ -19,9 +19,10 @@ case class Plus() extends Operator("+")
 case class Minus() extends Operator("-")
 case class Multiply() extends Operator("*")
 case class Division() extends Operator("/")
+case class Power()    extends Operator("^")
 
 //relational
-case class Equal() extends Operator("==")
+case class Equal() extends Operator("=")
 case class Greater() extends Operator(">")
 case class Less() extends Operator("<")
 case class GreaterOrEqual() extends Operator(">=")
@@ -29,10 +30,10 @@ case class LessOrEqual() extends Operator("<=")
 case class NotEqual() extends Operator("!=")
 
 //logical
-case class Negation() extends Operator("¬")
-case class Or() extends Operator("⋁")
-case class And() extends Operator("⋀")
-case class Imply() extends Operator("->")
+case class Negation() extends Operator("~")
+case class Or() extends Operator("""\/""")
+case class And() extends Operator("""/\""")
+case class Implies() extends Operator("->")
 
 abstract class Expression(children:List[Node]) extends Node(children)
 

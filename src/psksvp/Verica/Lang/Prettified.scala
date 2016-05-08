@@ -5,8 +5,6 @@ package psksvp.Verica.Lang
   */
 object Prettified
 {
-
-
   def apply(n:Node):String = n match
   {
     case s:Statement if false == s.isInstanceOf[Sequence] => indentString + pretty(n)
