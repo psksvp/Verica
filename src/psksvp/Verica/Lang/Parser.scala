@@ -52,13 +52,13 @@ object Parser extends JavaTokenParsers with PackratParsers
     }
   }
 
-  lazy val factor = "(" ~> expression <~ ")" | num | trueLiteral | falseLiteral | notExpr
+  lazy val factor = "(" ~> expression <~ ")" | num | trueLiteral | falseLiteral | notExpr | variable
 
   lazy val num = floatingPointNumber ^^ { t => IntegerValue(t.toInt) }
   lazy val trueLiteral = "true" ^^ {t => True()}
   lazy val falseLiteral = "false" ^^ {t => False()}
   lazy val notExpr = "~" ~> expression ^^ {t => Unary(Negation(), t)}
-
+  lazy val variable = identifier ^^ {t => Variable(t)}
 
   lazy val numericP2OP = "*" | "/" ^^ {t => t}
   lazy val numericP1OP = "+" | "-" ^^ {t => t}
