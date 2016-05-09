@@ -45,11 +45,11 @@ object Test
         |}
       """.stripMargin
 
-    println(Parser.parse(prog9))
-    println(Parser.parse(prog1))
+    //println(Parser.parse(prog9))
+    //println(Parser.parse(prog1))
 
-    println(Parser.parseExpression("""2 + 2 \/ 8 - 3"""))
-    println( norm(True(), "{ assume(i >= -10)  assume(r=0)  }"))
+    //println(Parser.parseExpression("""2 + 2 \/ 8 - 3"""))
+    //println( norm(True(), "{ assume(i >= -10)  assume(r=0)  }"))
 
     /*
     println(m)

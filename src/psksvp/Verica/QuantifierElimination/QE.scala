@@ -32,10 +32,13 @@ case class SuchThat(expression: Expression)
 
 object QE
 {
-  def apply(quantifier: Quantifier, suchThat: SuchThat):String=
+  def apply(quantifier: Quantifier, suchThat: SuchThat):Expression=
   {
-    import sys.process._
-    makeZ3Python(quantifier, suchThat).!!
+    import psksvp.evalPython
+    val code = makeZ3Python(quantifier, suchThat)
+    evalPython(code).replaceAll("\\[", "")
+                    .replaceAll("\\]", "")
+                    .replaceAll(",", """/\""")
   }
 
   private def makeZ3Python(quantifier: Quantifier, suchThat: SuchThat):String=
@@ -51,21 +54,20 @@ object QE
       sVar.trim
     }
 
-
-    val output = "/usr/bin/python -c \"from z3 import *;" +
-                   makeVariables.replaceAll(" ", ",") + " = Reals('" + makeVariables + "');" +
-                  "g = Goal();" +
-                  "g.add(%s);" +
-                  "t = Tactic('qe');" +
-                  "print(t(g));\""
-
+    val varDecl = makeVariables.replaceAll(" ", ",") + " = Reals('" + makeVariables + "')"
     val qfType = quantifier match
     {
       case e:Exists => "Exists(" + e.toString + "," + z3Pythonize(suchThat.expression) + ")"
       case e:ForAll => "ForAll(" + e.toString + "," + z3Pythonize(suchThat.expression) + ")"
     }
-
-    String.format(output, qfType).trim()
+    s"""
+      |from z3 import *
+      |$varDecl
+      |g = Goal()
+      |g.add($qfType)
+      |t = Tactic('qe')
+      |print(t(g))
+    """.stripMargin.trim
   }
 }
 
