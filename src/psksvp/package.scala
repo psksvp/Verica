@@ -42,9 +42,9 @@ package object psksvp
     {
       val end = src.indexOf(endMarker, start)
       if (end >= start)
-        ls = List(src.substring(start, end)) ::: extractString(src.substring(end),
-                                                                startMarker,
-                                                                endMarker)
+        ls = List(src.substring(start + startMarker.length, end)) ::: extractString(src.substring(end),
+                                                                                    startMarker,
+                                                                                    endMarker)
     }
 
     ls

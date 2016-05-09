@@ -64,6 +64,8 @@ object Test
     import psksvp.Verica.QuantifierElimination._
     val h = QE(Exists("xp"), SuchThat("""(x = xp - 5) /\ (xp > 15)"""))
     println(h)
+    val g = QE(Exists("ip"), SuchThat("""i = ip + 1 /\ ip >= 0 /\ y2 = ip /\ r = xs + y1 /\ xslen > ip"""))
+    println(g)
 
     //println(Parser.parseExpression("""x = xp - 5 /\ Not(xp) > 15"""))
     //println(z3Pythonize("""x = xp - 5 /\ Not(xp) > 15  /\ x = 1"""))

@@ -34,11 +34,18 @@ object QE
 {
   def apply(quantifier: Quantifier, suchThat: SuchThat):Expression=
   {
-    import psksvp.evalPython
+    // do not simplify the following calls
+    // they are meant for easy debugging
     val code = makeZ3Python(quantifier, suchThat)
-    evalPython(code).replaceAll("\\[", "")
-                    .replaceAll("\\]", "")
-                    .replaceAll(",", """/\""")
+    val result = psksvp.evalPython(code)
+    val listExpr = psksvp.extractString(result, "[[", "]]")
+    if(Nil != listExpr)
+    {
+      val clean = listExpr.head.replaceAll(",\\\n", """/\\""").replace("==", "=")
+      Parser.parseExpression(clean)
+    }
+    else
+      False()
   }
 
   private def makeZ3Python(quantifier: Quantifier, suchThat: SuchThat):String=
