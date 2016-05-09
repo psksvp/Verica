@@ -45,7 +45,8 @@ object Test
         |}
       """.stripMargin
 
-    //val m = Parser.parse(prog1)
+    println(Parser.parse(prog9))
+    println(Parser.parse(prog1))
 
     println(Parser.parseExpression("""2 + 2 \/ 8 - 3"""))
     println( norm(True(), "{ assume(i >= -10)  assume(r=0)  }"))
@@ -60,7 +61,11 @@ object Test
     //println(Lispified(wp(m.sequence, p)))
 
     println( norm(True(), "{ assume(i=0)  assume(r=0)  }")) */
-    //import psksvp.Verica.QuantifierElimination._
-    //val h = Solve(Exists(Variable("x"), Variable("xp")), SuchThat("""((x = xp - 5) && (xp > 15))"""))
+    import psksvp.Verica.QuantifierElimination._
+    val h = QE(Exists("xp"), SuchThat("""(x = xp - 5) /\ (xp > 15)"""))
+    println(h)
+
+    //println(Parser.parseExpression("""x = xp - 5 /\ Not(xp) > 15"""))
+    //println(z3Pythonize("""x = xp - 5 /\ Not(xp) > 15  /\ x = 1"""))
   }
 }

@@ -9,7 +9,7 @@ package object Verica
 
   type Predicate = Expression
   implicit def string2Statement(src:String):Statement=Parser.parseStatement(src)
-  //implicit def string2Expression(src:String):Expression=Parser.parseExpression(src)
+  implicit def string2Expression(src:String):Expression=Parser.parseExpression(src)
   //implicit def string2Predicate(src:String):Predicate=Parser.parseExpression(src)
 
   implicit def string2ListOfVariable(src:String):Seq[Variable]=
@@ -193,5 +193,15 @@ package object Verica
     case Sequence(s)      => vc(p, s, q)
     case s:Sequence       => implies(p, and(vc(p, Sequence(s.stmts.take(s.count - 1):_*), q),
                                           vc(p, s.stmts.last, q)))
+  }
+
+  def z3Pythonize(expr:Expression):String=expr match
+  {
+    case Binary(Or(), l, r)     => "Or(" + z3Pythonize(l) + "," + z3Pythonize(r) + ")"
+    case Binary(And(), l, r)    => "And(" + z3Pythonize(l) + "," + z3Pythonize(r) + ")"
+    case Binary(Equal(), l, r)  =>  z3Pythonize(l) + "==" + z3Pythonize(r)
+    case Binary(Implies(), l, r)=> "Implies(" + z3Pythonize(l) + "," + z3Pythonize(r) + ")"
+    case Unary(Negation(), l)   => "Not(" + z3Pythonize(l) + ")"
+    case _                      => expr.toString
   }
 }
