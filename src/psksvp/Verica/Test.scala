@@ -45,29 +45,13 @@ object Test
         |}
       """.stripMargin
 
-    //println(Parser.parse(prog9))
-    //println(Parser.parse(prog1))
 
-    //println(Parser.parseExpression("""2 + 2 \/ 8 - 3"""))
-    //println( norm(True(), "{ assume(i >= -10)  assume(r=0)  }"))
-
-    /*
-    println(m)
-    val p = makePredicate("(x == 0)")
-    val q = makePredicate("(x == 1)")
-    println(p)
-    println(q)
-    println(vc(p, m.sequence, q))
-    //println(Lispified(wp(m.sequence, p)))
-
-    println( norm(True(), "{ assume(i=0)  assume(r=0)  }")) */
     import psksvp.Verica.QuantifierElimination._
     val h = QE(Exists("xp"), SuchThat("""(x = xp - 5) /\ (xp > 15)"""))
     println(h)
     val g = QE(Exists("ip"), SuchThat("""i = ip + 1 /\ ip >= 0 /\ y2 = ip /\ r = xs + y1 /\ xslen > ip"""))
     println(g)
+    println(strongestPostCondition("x := x - 5", "x > 15"))
 
-    //println(Parser.parseExpression("""x = xp - 5 /\ Not(xp) > 15"""))
-    //println(z3Pythonize("""x = xp - 5 /\ Not(xp) > 15  /\ x = 1"""))
   }
 }

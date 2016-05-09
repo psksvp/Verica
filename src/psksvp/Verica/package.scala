@@ -9,8 +9,8 @@ package object Verica
 
   type Predicate = Expression
   implicit def string2Statement(src:String):Statement=Parser.parseStatement(src)
+  implicit def string2Assignment(src:String):Assignment=Parser.parseStatement(src).asInstanceOf[Assignment]
   implicit def string2Expression(src:String):Expression=Parser.parseExpression(src)
-  //implicit def string2Predicate(src:String):Predicate=Parser.parseExpression(src)
 
   implicit def string2ListOfVariable(src:String):Seq[Variable]=
   {
@@ -83,7 +83,7 @@ package object Verica
 
   def norm(q:Predicate, s:Statement):Predicate = s match
   {
-    case Assignment(v, e)        => and(True(), substituteVariable(v, inPredicate = q, withExp = e))
+    case a:Assignment            => strongestPostCondition(a, q)
     case Assert(p)               => and(q, p)
     case Assume(p)               => and(q, p)
     case Choice(a, b)            => or(norm(q, a), norm(q, b))
@@ -203,5 +203,13 @@ package object Verica
     case Binary(Implies(), l, r)=> "Implies(" + z3Pythonize(l) + "," + z3Pythonize(r) + ")"
     case Unary(Negation(), l)   => "Not(" + z3Pythonize(l) + ")"
     case _                      => expr.toString
+  }
+
+  def strongestPostCondition(assignment: Assignment, q: Predicate):Expression=
+  {
+    import psksvp.Verica.QuantifierElimination._
+    val vP = Variable(assignment.variable.name + "P")
+    val eq = equal(assignment.variable, substituteVariable(assignment.variable, assignment.expr, vP))
+    QE(Exists(vP :: Nil), SuchThat(and(eq, substituteVariable(assignment.variable, inPredicate = q, withExp = vP))))
   }
 }
