@@ -59,7 +59,18 @@ package object psksvp
   {
     import sys.process._
     val code = src.replaceAll("\n", ";").trim
-    Seq(python.trim, "-c", code).!!
+    (Seq(python.trim, "-c", code).!!).trim
+  }
+
+  def removeDuplicate[T](ls:List[T]):List[T] =
+  {
+    var result:List[T] = Nil
+    for(e <- ls)
+    {
+      if(false == result.contains(e))
+        result = result ::: List(e)
+    }
+    result
   }
 }
 

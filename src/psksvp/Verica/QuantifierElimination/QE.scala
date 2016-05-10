@@ -61,11 +61,13 @@ object QE
       sVar.trim
     }
 
-    val varDecl = makeVariables.replaceAll(" ", ",") + " = Reals('" + makeVariables + "')"
+    // here I assume that every variable is an Interger (Ints)
+    // z3py has Real, Reals, Int, Ints, Bool, Bools
+    val varDecl = makeVariables.replaceAll(" ", ",") + " = Ints('" + makeVariables + "')"
     val qfType = quantifier match
     {
-      case e:Exists => "Exists(" + e.toString + "," + z3Pythonize(suchThat.expression) + ")"
-      case e:ForAll => "ForAll(" + e.toString + "," + z3Pythonize(suchThat.expression) + ")"
+      case e:Exists => "Exists(" + e.toString + "," + Z3.pythonize(suchThat.expression) + ")"
+      case e:ForAll => "ForAll(" + e.toString + "," + Z3.pythonize(suchThat.expression) + ")"
     }
     s"""
       |from z3 import *

@@ -46,12 +46,15 @@ object Test
       """.stripMargin
 
 
+
     import psksvp.Verica.QuantifierElimination._
-    val h = QE(Exists("xp"), SuchThat("""(x = xp - 5) /\ (xp > 15)"""))
+    val h = QE(Exists("xp"), SuchThat("""(x = xp - 5) /\ (xp >= 15)"""))
     println(h)
     val g = QE(Exists("ip"), SuchThat("""i = ip + 1 /\ ip >= 0 /\ y2 = ip /\ r = xs + y1 /\ xslen > ip"""))
     println(g)
-    println(strongestPostCondition("x := x - 5", "x > 15"))
+    println(strongestPostCondition("x := x - 5", "x >= 15")) 
+
+    println(Z3.Validity.check("x + 1 = 2 -> x = 1"))
 
   }
 }

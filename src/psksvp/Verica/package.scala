@@ -195,15 +195,6 @@ package object Verica
                                           vc(p, s.stmts.last, q)))
   }
 
-  def z3Pythonize(expr:Expression):String=expr match
-  {
-    case Binary(Or(), l, r)     => "Or(" + z3Pythonize(l) + "," + z3Pythonize(r) + ")"
-    case Binary(And(), l, r)    => "And(" + z3Pythonize(l) + "," + z3Pythonize(r) + ")"
-    case Binary(Equal(), l, r)  =>  z3Pythonize(l) + "==" + z3Pythonize(r)
-    case Binary(Implies(), l, r)=> "Implies(" + z3Pythonize(l) + "," + z3Pythonize(r) + ")"
-    case Unary(Negation(), l)   => "Not(" + z3Pythonize(l) + ")"
-    case _                      => expr.toString
-  }
 
   def strongestPostCondition(assignment: Assignment, q: Predicate):Expression=
   {
