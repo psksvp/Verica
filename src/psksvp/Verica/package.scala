@@ -1,5 +1,7 @@
 package psksvp
 
+import psksvp.Verica.Z3.{Exists, QE, SuchThat}
+
 /**
   * Created by psksvp on 11/04/2016.
   */
@@ -198,9 +200,9 @@ package object Verica
 
   def strongestPostCondition(assignment: Assignment, q: Predicate):Expression=
   {
-    import psksvp.Verica.QuantifierElimination._
     val vP = Variable(assignment.variable.name + "P")
     val eq = equal(assignment.variable, substituteVariable(assignment.variable, assignment.expr, vP))
-    QE(Exists(vP :: Nil), SuchThat(and(eq, substituteVariable(assignment.variable, inPredicate = q, withExp = vP))))
+    QE.solve(Exists(vP :: Nil),
+             SuchThat(and(eq, substituteVariable(assignment.variable, inPredicate = q, withExp = vP))))
   }
 }

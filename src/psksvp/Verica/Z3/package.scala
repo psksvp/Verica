@@ -23,10 +23,7 @@ package object Z3
   {
     var result = ""
     for(v <- psksvp.removeDuplicate(listOfVariablesIn(expr)))
-    {
-
       result = result.concat(makeIntVariable(v) + "\n")
-    }
 
     result.trim
   }

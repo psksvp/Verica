@@ -1,4 +1,4 @@
-package psksvp.Verica.QuantifierElimination
+package psksvp.Verica.Z3
 
 /**
   * Created by psksvp on 4/05/2016.
@@ -32,7 +32,7 @@ case class SuchThat(expression: Expression)
 
 object QE
 {
-  def apply(quantifier: Quantifier, suchThat: SuchThat):Expression=
+  def solve(quantifier: Quantifier, suchThat: SuchThat):Expression=
   {
     // do not simplify the following calls
     // they are meant for easy debugging

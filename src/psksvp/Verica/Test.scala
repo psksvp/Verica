@@ -1,5 +1,7 @@
 package psksvp.Verica
 
+import psksvp.Verica.Z3.{Exists, QE, SuchThat, Validity}
+
 
 /**
   * Created by psksvp on 11/04/2016.
@@ -47,14 +49,14 @@ object Test
 
 
 
-    import psksvp.Verica.QuantifierElimination._
-    val h = QE(Exists("xp"), SuchThat("""(x = xp - 5) /\ (xp >= 15)"""))
-    println(h)
-    val g = QE(Exists("ip"), SuchThat("""i = ip + 1 /\ ip >= 0 /\ y2 = ip /\ r = xs + y1 /\ xslen > ip"""))
-    println(g)
-    println(strongestPostCondition("x := x - 5", "x >= 15")) 
 
-    println(Z3.Validity.check("x + 1 = 2 -> x = 1"))
+    val h = QE.solve(Exists("xp"), SuchThat("""(x = xp - 5) /\ (xp >= 15)"""))
+    println(h)
+    val g = QE.solve(Exists("ip"), SuchThat("""i = ip + 1 /\ ip >= 0 /\ y2 = ip /\ r = xs + y1 /\ xslen > ip"""))
+    println(g)
+    println(strongestPostCondition("x := x - 5", "x >= 15"))
+
+    println(Validity.check("x + 1 = 2 -> x = 1"))
 
   }
 }
