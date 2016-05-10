@@ -58,5 +58,9 @@ object Test
 
     println(Validity.check("x + 1 = 2 -> x = 1"))
 
+
+    val r = alpha("""i = 0 /\ r = 0""", Predicates("i>=0", "r >= 0"))
+    println(r + "")
+    println(gamma(r, Predicates("i>=0", "r >= 0")))
   }
 }

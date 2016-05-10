@@ -14,6 +14,8 @@ package object Z3
     case Binary(Equal(), l, r)  =>  pythonize(l) + "==" + pythonize(r)
     case Binary(Implies(), l, r)=> "Implies(" + pythonize(l) + "," + pythonize(r) + ")"
     case Unary(Negation(), l)   => "Not(" + pythonize(l) + ")"
+    case True()                 => "True"
+    case False()                => "False"
     case _                      => expr.toString
   }
 

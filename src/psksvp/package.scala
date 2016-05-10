@@ -52,7 +52,7 @@ package object psksvp
 
   def uuidString(prefix:String="L"):String=
   {
-    prefix + java.util.UUID.randomUUID().toString().replace("-", "")
+    prefix + java.util.UUID.randomUUID().toString.replace("-", "")
   }
 
   def evalPython(src:String, python:String="/usr/bin/python"):String=
@@ -68,7 +68,19 @@ package object psksvp
     for(e <- ls)
     {
       if(false == result.contains(e))
-        result = result ::: List(e)
+        result = result :+ e
+    }
+    result
+  }
+
+  def booleanArray(i:Int, bits:Int): Array[Boolean] =
+  {
+    val result = new Array[Boolean](bits)
+    val format = "%" + bits + "s"
+    val binStr = String.format(format, Integer.toBinaryString(i)).replace(" ", "0")
+    for((c, i) <- binStr zip (0 until bits))
+    {
+      result(i) = if('1' == c) true else false
     }
     result
   }

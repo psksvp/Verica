@@ -10,10 +10,24 @@ package object Verica
   import psksvp.Verica.Lang._
 
   type Predicate = Expression
+  type AbstractDomain = List[Array[Boolean]]
+
+  implicit def booleanArrayToString(a:Array[Boolean]):String=
+  {
+    var s = "("
+    for(b <- a)
+      s = s + (b + " ")
+    s = s.trim + ")"
+    s
+  }
+  implicit def listOfBooleanArrayToString(a:List[Array[Boolean]]):String = a match
+  {
+    case s :: rest => "[" + booleanArrayToString(s) + " " + listOfBooleanArrayToString(rest) + "]"
+    case Nil       => ""
+  }
   implicit def string2Statement(src:String):Statement=Parser.parseStatement(src)
   implicit def string2Assignment(src:String):Assignment=Parser.parseStatement(src).asInstanceOf[Assignment]
   implicit def string2Expression(src:String):Expression=Parser.parseExpression(src)
-
   implicit def string2ListOfVariable(src:String):Seq[Variable]=
   {
     var r:List[Variable] = Nil
@@ -111,36 +125,76 @@ package object Verica
                                       While(p, Invariant(and(i, j)), e, b)
   }
 
-  def infer(c:Statement, s:Statement):(Expression, Statement)= s match
+  def infer(c:Statement, s:Statement):(Expression, Statement)= //s match
   {
+      /*
     case While(p, i, e, b) =>
       val h = havoc(targets(b))
-      val r = alpha(norm(True(), c), p)
+      //val r = alpha(norm(True(), c), p)
+      /*
       //while(true)
       //{
-        val j  = gamma(r)
+        //val j  = gamma(r)
         val a  = Assume(and(and(e, i.expr), j))
         val bp = traverse(Sequence(c, h, a), b)
         val q  = norm(True(), Sequence(c, h, a, bp))
 
-        (j, bp)
+        (j, bp) */
       //}
 
-    case _ => sys.error("expect parm s to be a While")
-
+    case _ => sys.error("expect parm s to be a While") */
+    (True(), Empty())
   }
 
   //dummy for now
-  def alpha(expr:Expression, pred:Predicates):Array[Boolean]=
+  def alpha(expr:Expression, pred:Predicates):List[Array[Boolean]]=
   {
-    println(s"$expr for predicate $pred")
-    Array(true, false)
+    var ls:List[Array[Boolean]] = Nil
+    val combinationSize = scala.math.pow(2, pred.count).toInt  // TODO: can have overflow problem
+    for(i <- 0 until combinationSize)
+    {
+      val combination =  psksvp.booleanArray(i, pred.count)
+      val expr2Chk = implies(expr, gamma(combination, pred))
+      if(True() == Z3.Validity.check(expr2Chk))
+      {
+        ls = ls :+ combination
+      }
+    }
+
+    ls
   }
 
-  //dummy for now
-  def gamma(absDom:Array[Boolean]):Expression=
+  def gamma(combination:Array[Boolean], pred:Predicates):Expression=
   {
-    False()
+    require(combination.length == pred.count, "gamma error: absDomain.size != predicates.count")
+    var exprStr = ""
+    for((value, predicate) <- combination zip pred.exprs)
+    {
+      if(true == value)
+        exprStr = exprStr.concat(s"$predicate /\\")
+      else
+        exprStr = exprStr.concat(s"Not($predicate) /\\")
+    }
+
+    val idx = exprStr.lastIndexOf("/\\")
+    exprStr.substring(0, idx)
+  }
+
+  def gamma(listOfCombination:List[Array[Boolean]], pred:Predicates):Expression = listOfCombination match
+  {
+    case Nil       => True()
+    case a :: rest => and(gamma(a, pred), gamma(rest, pred))
+  }
+
+  def union(r:AbstractDomain, q:Expression):AbstractDomain=
+  {
+    var r:AbstractDomain = Nil
+    for(m <- r)
+    {
+
+    }
+
+    r
   }
 
 
