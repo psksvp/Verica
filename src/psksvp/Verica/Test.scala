@@ -62,5 +62,13 @@ object Test
     val r = alpha("""i = 0 /\ r = 0""", Predicates("i>=0", "r >= 0"))
     println(r + "")
     println(gamma(r, Predicates("i>=0", "r >= 0")))
+
+    val a:AbstractDomain = List(Array(true, false, true), Array(true, true, true), Array(true, false, false))
+    val expr:Expression = a
+    println(expr)
+
+    println("---------")
+    val aa:AbstractDomain = List(Array(true, false), Array(true, true), Array(true, false))
+    println(gamma(aa, Predicates("i>=0", "r >= 0")))
   }
 }

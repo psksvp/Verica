@@ -61,6 +61,11 @@ package object Verica
 
   def not(expr:Expression) = Unary(Negation(), expr)
 
+  /**
+    *
+    * @param stmt
+    * @return
+    */
   def targets(stmt:Statement):List[Variable] = stmt match
   {
     case Assignment(variable, _)  => List(variable)
@@ -127,29 +132,26 @@ package object Verica
 
   def infer(c:Statement, s:Statement):(Expression, Statement)= //s match
   {
-      /*
     case While(p, i, e, b) =>
       val h = havoc(targets(b))
-      //val r = alpha(norm(True(), c), p)
-      /*
-      //while(true)
-      //{
-        //val j  = gamma(r)
+      val r = alpha(norm(True(), c), p)
+
+      while(true)
+      {
+        val j  = gamma(r, p)
         val a  = Assume(and(and(e, i.expr), j))
         val bp = traverse(Sequence(c, h, a), b)
         val q  = norm(True(), Sequence(c, h, a, bp))
+        val next = union(r, alpha(q, p), p)
+        (j, bp)
+      }
 
-        (j, bp) */
-      //}
-
-    case _ => sys.error("expect parm s to be a While") */
-    (True(), Empty())
+    case _ => sys.error("expect parm s to be a While")
   }
 
-  //dummy for now
-  def alpha(expr:Expression, pred:Predicates):List[Array[Boolean]]=
+  def alpha(expr:Expression, pred:Predicates):AbstractDomain=
   {
-    var ls:List[Array[Boolean]] = Nil
+    var ls:AbstractDomain = Nil
     val combinationSize = scala.math.pow(2, pred.count).toInt  // TODO: can have overflow problem
     for(i <- 0 until combinationSize)
     {
@@ -167,34 +169,66 @@ package object Verica
   def gamma(combination:Array[Boolean], pred:Predicates):Expression=
   {
     require(combination.length == pred.count, "gamma error: absDomain.size != predicates.count")
-    var exprStr = ""
-    for((value, predicate) <- combination zip pred.exprs)
-    {
-      if(true == value)
-        exprStr = exprStr.concat(s"$predicate /\\")
-      else
-        exprStr = exprStr.concat(s"Not($predicate) /\\")
-    }
 
-    val idx = exprStr.lastIndexOf("/\\")
-    exprStr.substring(0, idx)
+    def makeExpression(b:Boolean, p:Predicate):Expression = if(b) p else not(p)
+
+    if(1 == combination.length)
+    {
+      makeExpression(combination(0), pred(0))
+    }
+    else
+    {
+      var expr = makeExpression(combination(0), pred(0))
+      for(i <- 1 until combination.length)
+      {
+        expr = and(expr, makeExpression(combination(i), pred(i)))
+      }
+      expr
+    }
   }
 
-  def gamma(listOfCombination:List[Array[Boolean]], pred:Predicates):Expression = listOfCombination match
+  def gamma(absDomain:AbstractDomain, pred:Predicates):Expression = absDomain match
   {
-    case Nil       => True()
+    case Nil       => sys.error("gamma(a:AbstractDomain, ..) a is Nil")
+    case a :: Nil  => gamma(a, pred)
     case a :: rest => and(gamma(a, pred), gamma(rest, pred))
   }
 
-  def union(r:AbstractDomain, q:Expression):AbstractDomain=
+  def union(r:AbstractDomain, q:Expression, predicates: Predicates):AbstractDomain=
   {
-    var r:AbstractDomain = Nil
+    var result:AbstractDomain = Nil
     for(m <- r)
     {
-
+      val expr = and(implies(r, m), implies(q, gamma(m, predicates)))
+      if(True() == Z3.Validity.check(expr))
+        result = result :+ m
     }
-
     r
+  }
+
+  implicit def booleanArray2Expression(a:Array[Boolean]):Expression=
+  {
+    implicit def boolean2Expression(b:Boolean):Expression = if(b) True() else False()
+
+    if(1 == a.length)
+      a(0)
+    else
+    {
+      var expr:Expression = a(0)
+      for(i <- 1 until a.length)
+      {
+        expr = and(expr, a(i))
+      }
+      expr
+    }
+  }
+
+  implicit def abstractDomain2Expression(absDomain:AbstractDomain):Expression = absDomain match
+  {
+    case Nil            => sys.error("abstractDomain2Expression(a:AbstractDomain, ..) a is Nil")
+    case a :: Nil       => a
+    case a :: b :: Nil  => or(a, b)
+    case a :: b :: rest => or(or(a, b), abstractDomain2Expression(rest))
   }
 
 
