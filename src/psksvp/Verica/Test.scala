@@ -10,21 +10,6 @@ object Test
 {
   import psksvp.Verica.Lang._
 
-  val P = Predicates( Binary(GreaterOrEqual(), Variable("sum"), IntegerValue(0)),
-                      Binary(GreaterOrEqual(), Variable("i"), IntegerValue(1)))
-
-  val e = Binary(LessOrEqual(), Variable("i"), Variable("n"))
-
-  val B = Sequence( Assignment(Variable("sum"), Binary(Plus(), Variable("Sum"), Variable("i"))),
-                    Assignment(Variable("i"), Binary(Plus(), Variable("i"), IntegerValue(1))))
-
-  val prog = Sequence( Assume(Binary(Greater(), Variable("n"), IntegerValue(0))),
-                       Assignment(Variable("sum"), IntegerValue(0)),
-                       Assignment(Variable("i"), IntegerValue(0)),
-                       While(P, Invariant(True()), e, B),
-                       Assert(Binary(Greater(), Variable("sum"), IntegerValue(0)))
-                     )
-
 
   def main(args:Array[String]):Unit=
   {
@@ -70,5 +55,18 @@ object Test
     println("---------")
     val aa:AbstractDomain = List(Array(true, false), Array(true, true), Array(true, false))
     println(gamma(aa, Predicates("i>=0", "r >= 0")))
+
+
+    val m =
+      """
+        |[(i > 2)(r >= 0), i > 2 /\ r >= 0]while(i < 0)
+        |{
+        |  i := i + n
+        |  n := n + 1
+        |}
+      """.stripMargin
+
+     val wh = Parser.parseWhile2(m)
+     println(wh)
   }
 }

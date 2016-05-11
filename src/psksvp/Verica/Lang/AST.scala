@@ -60,12 +60,15 @@ case class Binary(operator: Operator,
                   exprRight:Expression) extends Expression(List(operator, exprLeft, exprRight))
 
 
-case class Invariant(expr:Expression) extends Expression(List(expr))
-case class Predicates(exprs:Expression*) extends Expression(exprs.toList)
+
+case class Predicates(exprs:Expression*) extends Node(exprs.toList)
 {
   def count = exprs.size
   def apply(index:Int) = exprs(index)
 }
+
+case class PredicatesAndInvariant(predicates: Predicates,
+                                   invariant: Expression) extends Node(List(predicates, invariant))
 
 abstract class Statement(children:List[Node]) extends Node(children)
 case class Empty() extends Statement(Nil)
@@ -79,7 +82,7 @@ case class Sequence(stmts:Statement*) extends Statement(stmts.toList)
 case class Choice(stmtA:Statement, stmtB:Statement) extends Statement(List(stmtA, stmtB))
 
 case class While(predicates:Predicates,
-                 invariant:Invariant,
+                 invariant:Expression,
                  expr:Expression,
                  stmt:Statement) extends Statement(List(expr, stmt))
 

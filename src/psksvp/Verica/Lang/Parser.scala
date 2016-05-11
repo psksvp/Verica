@@ -69,20 +69,19 @@ object Parser extends JavaTokenParsers with PackratParsers
   lazy val logicOP = """/\""" | """\/""" | "->" ^^ {t => t}
 
 
-
-  lazy val invariant:PackratParser[Invariant] = expression ^^
-  {
-    case exp => Invariant(exp)
-  }
-
-  lazy val Predicates:PackratParser[Predicates] = (("(" ~> expression <~ ")") *) ^^
+  lazy val predicates:PackratParser[Predicates] = (("(" ~> expression <~ ")") *) ^^
   {
     case p:Seq[Expression] => psksvp.Verica.Lang.Predicates(p:_*)
   }
 
+  lazy val loopPredicateAndInvariant:PackratParser[PredicatesAndInvariant] = "[" ~ predicates ~ "," ~ expression ~ "]" ^^
+  {
+    case "[" ~ pred ~ "," ~ inv ~ "]"  => PredicatesAndInvariant(pred, inv)
+  }
+
   /////////////////////////////
   // statement
-  lazy val statement:PackratParser[Statement] = assert|assume|whileLoop|ifElse|assignment|sequence
+  lazy val statement:PackratParser[Statement] = assert|assume|whileLoop2|whileLoop|ifElse|assignment|sequence
 
   lazy val assignment:PackratParser[Assignment] = identifier ~ (":=" ~> expression) ^^
   {
@@ -107,6 +106,11 @@ object Parser extends JavaTokenParsers with PackratParsers
   lazy val whileLoop:PackratParser[While] = (("while(" ~> expression <~ ")") ~ statement) ^^
   {
     case exp ~ stm => While(null, null, exp, stm)
+  }
+
+  lazy val whileLoop2:PackratParser[While] = loopPredicateAndInvariant ~ "while(" ~ expression ~ ")" ~ statement ^^
+  {
+    case pi ~ "while(" ~ exp ~ ")" ~ stm => While(pi.predicates, pi.invariant, exp, stm)
   }
 
 
@@ -161,6 +165,15 @@ object Parser extends JavaTokenParsers with PackratParsers
     {
       case b:Binary => b
       case _        => sys.error("expression is not a Binary expression")
+    }
+  }
+
+  def parseWhile2(src:String):While=
+  {
+    parseAll(whileLoop2, src) match
+    {
+      case Success(topNode, _) => topNode
+      case f                   => sys.error("expression is not a While expression")
     }
   }
 

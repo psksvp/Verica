@@ -23,7 +23,6 @@ object Prettified
     case Unary(op, opd)   => s"${apply(op)}${apply(opd)}"
     case Assignment(v, e) => s"${apply(v)} := ${apply(e)}"
     case Choice(a, b)     => s"${apply(a)} ☐ ${apply(b)}"
-    case Invariant(e)     => apply(e)
     case s:Sequence       => pretty(s)
     case p:Predicates     => pretty(p)
     case While(p, i, e, s)=> indent()

@@ -12,7 +12,7 @@ package object Verica
   type Predicate = Expression
   type AbstractDomain = List[Array[Boolean]]
 
-  implicit def booleanArrayToString(a:Array[Boolean]):String=
+  implicit def booleanArray2String(a:Array[Boolean]):String=
   {
     var s = "("
     for(b <- a)
@@ -20,9 +20,9 @@ package object Verica
     s = s.trim + ")"
     s
   }
-  implicit def listOfBooleanArrayToString(a:List[Array[Boolean]]):String = a match
+  implicit def AbstractDomain2String(a:AbstractDomain):String = a match
   {
-    case s :: rest => "[" + booleanArrayToString(s) + " " + listOfBooleanArrayToString(rest) + "]"
+    case s :: rest => "[" + booleanArray2String(s) + " " + AbstractDomain2String(rest) + "]"
     case Nil       => ""
   }
   implicit def string2Statement(src:String):Statement=Parser.parseStatement(src)
@@ -127,24 +127,24 @@ package object Verica
                                       val bP = traverse(Sequence(c, aP), b)
                                       Sequence(aP, bP)
     case While(p, i, e, _)         => val (j, b) = infer(c, s)
-                                      While(p, Invariant(and(i, j)), e, b)
+                                      While(p, and(i, j), e, b)
   }
 
-  def infer(c:Statement, s:Statement):(Expression, Statement)= //s match
+  def infer(c:Statement, s:Statement):(Expression, Statement)= s match
   {
     case While(p, i, e, b) =>
       val h = havoc(targets(b))
       val r = alpha(norm(True(), c), p)
-
       while(true)
       {
         val j  = gamma(r, p)
-        val a  = Assume(and(and(e, i.expr), j))
+        val a  = Assume(and(and(e, i), j))
         val bp = traverse(Sequence(c, h, a), b)
         val q  = norm(True(), Sequence(c, h, a, bp))
-        val next = union(r, alpha(q, p), p)
+        val next = union(r, q, p)
         (j, bp)
       }
+      (null, null)
 
     case _ => sys.error("expect parm s to be a While")
   }

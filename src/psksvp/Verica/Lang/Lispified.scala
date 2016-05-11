@@ -17,7 +17,6 @@ object Lispified
     case Unary(op, opd)          => s"(${apply(op)} ${apply(opd)}"
     case Assignment(v, e)        => s"(:= ${apply(v)} ${apply(e)})"
     case Choice(a, b)            => s"(☐ ${apply(a)} ${apply(b)})"
-    case Invariant(e)            => apply(e)
     case Sequence(s, rest@ _*)   => s"${apply(s)}\n" + apply(Sequence(rest:_*))
     case Predicates(p, rest@ _*) => s"${apply(p)}" + apply(Predicates(rest:_*))
     case While(p, i, e, s)       => s"(while {${apply(p)}, ${apply(i)}} ${apply(e)}) ${apply(s)})"
