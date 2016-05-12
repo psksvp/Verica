@@ -38,6 +38,9 @@ object QE
     // they are meant for easy debugging
     val code = makeZ3Python(quantifier, suchThat)
     val result = psksvp.evalPython(code)
+    val pyExpr = Parser.parseZ3ListOutput(result)
+    and(pyExpr)
+    /*
     val listExpr = psksvp.extractString(result, "[[", "]]")
     if(Nil != listExpr)
     {
@@ -45,7 +48,7 @@ object QE
       Parser.parseExpression(clean)
     }
     else
-      False()
+      False()*/
   }
 
   private def makeZ3Python(quantifier: Quantifier, suchThat: SuchThat):String=

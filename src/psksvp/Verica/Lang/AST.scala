@@ -92,6 +92,9 @@ case class If(test:Expression,
 
 case class Module(name:String,
                   sequence:Sequence) extends Node(List(sequence))
+{
+  def body = sequence
+}
 
 
 abstract class Formula(children:List[Node]) extends Expression(children)

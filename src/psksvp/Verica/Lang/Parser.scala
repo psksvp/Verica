@@ -25,6 +25,7 @@ object Parser extends JavaTokenParsers with PackratParsers
   {
     case t ~ ts => ts.foldLeft(t)
     {
+      case (t1, "==" ~t2)  => Binary(Equal(),t1, t2)
       case (t1, "=" ~ t2)  => Binary(Equal(),t1, t2)
       case (t1, "!=" ~ t2) => Binary(NotEqual(),t1, t2)
       case (t1, ">" ~ t2)  => Binary(Greater(), t1, t2)
@@ -54,18 +55,20 @@ object Parser extends JavaTokenParsers with PackratParsers
 
   lazy val expressionList = repsep(expression, ",")
 
-  lazy val factor = "(" ~> expression <~ ")" | num | trueLiteral | falseLiteral | notExpr | notFunc | variable
+  lazy val factor = "(" ~> expression <~ ")" |num|trueLiteral|falseLiteral|notExpr|notFunc|andFunc|orFunc|variable
 
   lazy val num = floatingPointNumber                    ^^ {t => IntegerValue(t.toInt) }
   lazy val trueLiteral = "true"                         ^^ {t => True()}
   lazy val falseLiteral = "false"                       ^^ {t => False()}
   lazy val notExpr = "~" ~> expression                  ^^ {t => Unary(Negation(), t)}
-  lazy val notFunc = ("Not(" ~> expression <~ ")")      ^^ {t => Unary(Negation(), t)}
+  lazy val notFunc = "Not(" ~> expression <~ ")"        ^^ {t => Unary(Negation(), t)}
+  lazy val andFunc = "And(" ~> expressionList <~ ")"    ^^ {t => psksvp.Verica.and(t)}
+  lazy val orFunc = "Or(" ~> expressionList <~ ")"      ^^ {t => psksvp.Verica.or(t)}
   lazy val variable = identifier                        ^^ {t => Variable(t)}
 
   lazy val numericP2OP = "*" | "/" ^^ {t => t}
   lazy val numericP1OP = "+" | "-" ^^ {t => t}
-  lazy val relationOP = "=" | "!=" | "<=" | "<" | ">=" | ">" ^^ {t => t}
+  lazy val relationOP = "==" | "=" | "!=" | "<=" | "<" | ">=" | ">" ^^ {t => t}
   lazy val logicOP = """/\""" | """\/""" | "->" ^^ {t => t}
 
 
@@ -77,6 +80,11 @@ object Parser extends JavaTokenParsers with PackratParsers
   lazy val loopPredicateAndInvariant:PackratParser[PredicatesAndInvariant] = "[" ~ predicates ~ "," ~ expression ~ "]" ^^
   {
     case "[" ~ pred ~ "," ~ inv ~ "]"  => PredicatesAndInvariant(pred, inv)
+  }
+
+  lazy val z3pyListOutput:PackratParser[List[Expression]] = "[[" ~ expressionList ~ "]]" ^^
+  {
+    case "[[" ~ exprLs ~ "]]" => exprLs
   }
 
   /////////////////////////////
@@ -173,7 +181,16 @@ object Parser extends JavaTokenParsers with PackratParsers
     parseAll(whileLoop2, src) match
     {
       case Success(topNode, _) => topNode
-      case f                   => sys.error("expression is not a While expression")
+      case f                   => sys.error("expression is not a While2 expression")
+    }
+  }
+
+  def parseZ3ListOutput(src:String):List[Expression]=
+  {
+    parseAll(z3pyListOutput, src) match
+    {
+      case Success(topNode, _) => topNode
+      case f                   => sys.error("expression is not a z3pyListOutput expression")
     }
   }
 

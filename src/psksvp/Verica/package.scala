@@ -47,6 +47,21 @@ package object Verica
 
 
   ////////////////////////////////////////////
+  def and(exprs:List[Expression]):Expression = exprs match
+  {
+    case Nil          => sys.error("and(exprs:List[Expression]) is called with empty list")
+    case expr :: Nil  => expr
+    case expr :: rest => and(expr, and(rest))
+
+  }
+
+  def or(exprs:List[Expression]):Expression = exprs match
+  {
+    case Nil          => sys.error("or(exprs:List[Expression]) is called with empty list")
+    case expr :: Nil  => expr
+    case expr :: rest => or(expr, or(rest))
+  }
+
   def and(left:Expression,
           right:Expression) = Binary(And(), left, right)
 
@@ -112,6 +127,12 @@ package object Verica
     case Sequence(a, b)          => norm(norm(q, a), b)
     case Sequence(a, b, rest@_*) => norm(norm(q, Sequence(a, b)), Sequence(rest:_*))
     case sw:While                => norm(q, desugar(sw))
+    case Empty()                 => True()
+  }
+
+  def traverse(s:Sequence):Statement = s match
+  {
+    case Sequence(a, rest@_*) => traverse(a, Sequence(rest: _*))
   }
 
   def traverse(c:Statement, s:Statement):Statement = s match
@@ -122,9 +143,7 @@ package object Verica
     case Choice(a, b)              => Choice(traverse(c, a), traverse(c, b))
     case Sequence(a)               => traverse(c, a)
     case Sequence(a, rest@_*)      => val aP = traverse(c, a)
-                                      traverse(aP, Sequence(rest: _*))
-    case Sequence(a, b)            => val aP = traverse(c, a)
-                                      val bP = traverse(Sequence(c, aP), b)
+                                      val bP = traverse(Sequence(c, aP), Sequence(rest: _*))
                                       Sequence(aP, bP)
     case While(p, i, e, _)         => val (j, b) = infer(c, s)
                                       While(p, and(i, j), e, b)
@@ -134,6 +153,7 @@ package object Verica
   {
     case While(p, i, e, b) =>
       val h = havoc(targets(b))
+      val n = norm(True(), c)
       val r = alpha(norm(True(), c), p)
       while(true)
       {

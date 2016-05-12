@@ -26,7 +26,7 @@ object Prettified
     case s:Sequence       => pretty(s)
     case p:Predicates     => pretty(p)
     case While(p, i, e, s)=> indent()
-                             val out = s"{${apply(p)}, ${apply(i)}} while(${apply(e)})\n${apply(s)}"
+                             val out = s"[${apply(p)}, ${apply(i)}] while(${apply(e)})\n${apply(s)}"
                              outdent()
                              out
     case a:If             => pretty(a)
@@ -49,14 +49,14 @@ object Prettified
 
   def pretty(seq:Sequence): String =
   {
-    var out = indentString + "begin\n"
+    var out = indentString + "{\n"
     indent()
     for(s <- seq.stmts)
     {
       out = out.concat(s"${apply(s)}\n")
     }
     outdent()
-    out = indentString + out.concat("end\n")
+    out = indentString + out.concat("}\n")
     out
   }
 
