@@ -9,6 +9,7 @@ import psksvp.Verica._
 abstract class Quantifier(vars:Seq[Variable])
 {
   def isTheir(variable: Variable) = if(vars.indexOf(variable) >= 0) true else false
+  def allVariables = vars
   override def toString:String=
   {
     if(1 == vars.size)
@@ -40,33 +41,13 @@ object QE
     val result = psksvp.evalPython(code)
     val pyExpr = Parser.parseZ3ListOutput(result)
     and(pyExpr)
-    /*
-    val listExpr = psksvp.extractString(result, "[[", "]]")
-    if(Nil != listExpr)
-    {
-      val clean = listExpr.head.replaceAll(",\\\n", """/\\""").replace("==", "=")
-      Parser.parseExpression(clean)
-    }
-    else
-      False()*/
   }
 
   private def makeZ3Python(quantifier: Quantifier, suchThat: SuchThat):String=
   {
-    def makeVariables:String=
-    {
-      var sVar = quantifier.toString + " "
-      for(v <- listOfVariablesIn(suchThat.expression))
-      {
-        if(false == quantifier.isTheir(v))
-          sVar = sVar.concat(v + " ")
-      }
-      sVar.trim
-    }
-
     // here I assume that every variable is an Interger (Ints)
     // z3py has Real, Reals, Int, Ints, Bool, Bools
-    val varDecl = makeVariables.replaceAll(" ", ",") + " = Ints('" + makeVariables + "')"
+    val varDecl = Z3.makeIntVariables(suchThat.expression) + ";" + Z3.makeIntVariables(quantifier.allVariables)
     val qfType = quantifier match
     {
       case e:Exists => "Exists(" + e.toString + "," + Z3.pythonize(suchThat.expression) + ")"
@@ -75,10 +56,10 @@ object QE
     s"""
       |from z3 import *
       |$varDecl
-      |g = Goal()
-      |g.add($qfType)
+      |gOaL3fgrt = Goal()
+      |gOaL3fgrt.add($qfType)
       |t = Tactic('qe')
-      |print(t(g))
+      |print(t(gOaL3fgrt))
     """.stripMargin.trim
   }
 }

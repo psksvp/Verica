@@ -63,9 +63,9 @@ object Test
         |module(bababa)
         |{
         |  assume(n > 0)
-        |  i := 0
+        |  i := 1
         |  s := 0
-        |  [(i >= 0)(s >= 0), true]while(i < n)
+        |  [(i >= 0)(s >= 0), true]while(i <= n)
         |  {
         |    s := s + i
         |    i := i + 1

@@ -17,9 +17,9 @@ object Validity
       s"""
         |from z3 import *
         |$vars
-        |s = Solver()
-        |s.add(Not($pyExpr))
-        |print(s.check())
+        |sOlVer = Solver()
+        |sOlVer.add(Not($pyExpr))
+        |print(sOlVer.check())
       """.stripMargin.trim
     if("unsat" == psksvp.evalPython(code))
       True()

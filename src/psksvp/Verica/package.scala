@@ -47,6 +47,7 @@ package object Verica
 
 
   ////////////////////////////////////////////
+  def and(exprs:Expression*):Expression = and(exprs.toList)
   def and(exprs:List[Expression]):Expression = exprs match
   {
     case Nil          => sys.error("and(exprs:List[Expression]) is called with empty list")
@@ -154,11 +155,11 @@ package object Verica
     case While(p, i, e, b) =>
       val h = havoc(targets(b))
       val n = norm(True(), c)
-      val r = alpha(norm(True(), c), p)
+      val r = alpha(n, p)
       while(true)
       {
         val j  = gamma(r, p)
-        val a  = Assume(and(and(e, i), j))
+        val a  = Assume(and(e, i,  j))
         val bp = traverse(Sequence(c, h, a), b)
         val q  = norm(True(), Sequence(c, h, a, bp))
         val next = union(r, q, p)

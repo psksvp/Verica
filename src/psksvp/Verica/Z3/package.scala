@@ -21,6 +21,15 @@ package object Z3
 
 
   def makeIntVariable(v:Variable):String = s"${v.name} = Int('${v.name}')"
+  def makeIntVariables(s:Seq[Variable]):String =
+  {
+    var decl = ""
+    for(v <- s)
+    {
+      decl = decl + makeIntVariable(v) + "\n"
+    }
+    decl.trim
+  }
   def makeIntVariables(expr:Expression):String =
   {
     var result = ""
