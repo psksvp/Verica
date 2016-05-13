@@ -73,14 +73,15 @@ package object psksvp
     result
   }
 
-  def booleanArray(i:Int, bits:Int): Array[Boolean] =
+  def booleanVector(i:Int, bits:Int): Vector[Boolean] =
   {
-    val result = new Array[Boolean](bits)
+    require(i <= Integer.parseInt("1"*bits, 2), "psksvp.booleanArray(i, bits) bits is too small for i ")
+    var result = scala.collection.immutable.Vector.empty[Boolean]
     val format = "%" + bits + "s"
     val binStr = String.format(format, Integer.toBinaryString(i)).replace(" ", "0")
     for((c, i) <- binStr zip (0 until bits))
     {
-      result(i) = if('1' == c) true else false
+      result = result :+ (if('1' == c) true else false)
     }
     result
   }

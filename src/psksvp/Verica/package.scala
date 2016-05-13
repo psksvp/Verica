@@ -10,9 +10,10 @@ package object Verica
   import psksvp.Verica.Lang._
 
   type Predicate = Expression
-  type AbstractDomain = List[Array[Boolean]]
+  type Formular  = Expression
+  type AbstractDomain = List[Vector[Boolean]]
 
-  implicit def booleanArray2String(a:Array[Boolean]):String=
+  implicit def booleanArray2String(a:Vector[Boolean]):String=
   {
     var s = "("
     for(b <- a)
@@ -155,17 +156,26 @@ package object Verica
     case While(p, i, e, b) =>
       val h = havoc(targets(b))
       val n = norm(True(), c)
-      val r = alpha(n, p)
-      while(true)
+      var r = alpha(n, p)
+      var j:Expression = True()
+      var bp:Statement = Empty()
+      var next:AbstractDomain = Nil
+      var keepLooping = true
+      do
       {
-        val j  = gamma(r, p)
+        j  = gamma(r, p)
         val a  = Assume(and(e, i,  j))
-        val bp = traverse(Sequence(c, h, a), b)
+        bp = traverse(Sequence(c, h, a), b)
         val q  = norm(True(), Sequence(c, h, a, bp))
-        val next = union(r, q, p)
-        (j, bp)
-      }
-      (null, null)
+        next = union(r, q, p)
+        if(r != next)
+          r = next
+        else
+          keepLooping = false
+      }while(true == keepLooping)
+      println(j)
+      println(bp)
+      (j, bp)
 
     case _ => sys.error("expect parm s to be a While")
   }
@@ -176,7 +186,7 @@ package object Verica
     val combinationSize = scala.math.pow(2, pred.count).toInt  // TODO: can have overflow problem
     for(i <- 0 until combinationSize)
     {
-      val combination =  psksvp.booleanArray(i, pred.count)
+      val combination =  psksvp.booleanVector(i, pred.count)
       val expr2Chk = implies(expr, gamma(combination, pred))
       if(True() == Z3.Validity.check(expr2Chk))
       {
@@ -187,7 +197,7 @@ package object Verica
     ls
   }
 
-  def gamma(combination:Array[Boolean], pred:Predicates):Expression=
+  def gamma(combination:Vector[Boolean], pred:Predicates):Expression=
   {
     require(combination.length == pred.count, "gamma error: absDomain.size != predicates.count")
 
@@ -227,10 +237,9 @@ package object Verica
     r
   }
 
-  implicit def booleanArray2Expression(a:Array[Boolean]):Expression=
+  implicit def boolean2Expression(b:Boolean):Expression = if(b) True() else False()
+  implicit def booleanArray2Expression(a:Vector[Boolean]):Expression=
   {
-    implicit def boolean2Expression(b:Boolean):Expression = if(b) True() else False()
-
     if(1 == a.length)
       a(0)
     else
