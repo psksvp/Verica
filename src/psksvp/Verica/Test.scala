@@ -1,6 +1,7 @@
 package psksvp.Verica
 
 import psksvp.Verica.Z3.{Exists, QE, SuchThat, Validity}
+import psksvp.Verica.PredicateAbstractionForSoftwareVerification._
 
 
 /**
@@ -49,12 +50,12 @@ object Test
     println(r + "")
     println(gamma(r, Predicates("i>=0", "r >= 0")))
 
-    val a:AbstractDomain = List(Array(true, false, true), Array(true, true, true), Array(true, false, false))
+    val a:AbstractDomain = List(Vector(true, false, true), Vector(true, true, true), Vector(true, false, false))
     val expr:Expression = a
     println(expr)
 
     println("---------")
-    val aa:AbstractDomain = List(Array(true, false), Array(true, true), Array(true, false))
+    val aa:AbstractDomain = List(Vector(true, false), Vector(true, true), Vector(true, false))
     println(gamma(aa, Predicates("i>=0", "r >= 0")))
     */
 
@@ -65,7 +66,7 @@ object Test
         |  assume(n > 0)
         |  i := 1
         |  s := 0
-        |  [(i >= 1)(s >= 0), true]while(i <= n)
+        |  [(i >= 1)(i = s + 1)(i<1)(s>=0), true]while(i <= n)
         |  {
         |    s := s + i
         |    i := i + 1
@@ -75,11 +76,7 @@ object Test
 
     val wh = Parser.parse(m)
     println(wh)
-    traverse(wh.body)
+    println(traverse(wh.body))
 
-    /*
-    val lsex = Parser.parseZ3ListOutput("[[Not(n <= 0), i == 0, i >= 23, And(i > 5, j < 10, 4 = 5), Or(2 > 3, 3 < 4)]]")
-    println(lsex)
-    println(and(lsex))*/
   }
 }
