@@ -43,6 +43,7 @@ package object Verica
 
   }
 
+  def or(exprs:Expression*):Expression = or(exprs.toList)
   def or(exprs:List[Expression]):Expression = exprs match
   {
     case Nil          => sys.error("or(exprs:List[Expression]) is called with empty list")
@@ -94,6 +95,12 @@ package object Verica
 
   }
 
+  /**
+    *
+    * @param stmt
+    * @param q
+    * @return
+    */
   def weakestPrecondition(stmt:Statement, q:Predicate):Predicate = stmt match
   {
     case Assignment(v, e)          => substituteVariable(v, inPredicate = q, withExp = e)
@@ -103,9 +110,21 @@ package object Verica
     case Sequence(s1, rest@_*)     => weakestPrecondition(s1, weakestPrecondition(Sequence(rest:_*), q))
   }
 
+  /**
+    *
+    * @param stmt
+    * @param q
+    * @return
+    */
   def wp(stmt:Statement, q:Predicate) = weakestPrecondition(stmt, q)
 
-
+  /**
+    *
+    * @param p
+    * @param stm
+    * @param q
+    * @return
+    */
   def vc(p:Expression, stm:Statement, q:Expression):Expression=stm match
   {
     case Assignment(v, e) => implies(p, substituteVariable(v, inPredicate = q, withExp = e))
@@ -115,7 +134,12 @@ package object Verica
                                             vc(p, s.stmts.last, q)))
   }
 
-
+  /**
+    *
+    * @param assignment
+    * @param q
+    * @return
+    */
   def strongestPostCondition(assignment: Assignment, q: Predicate):Expression=
   {
     val vP = Variable(assignment.variable.name + "P")

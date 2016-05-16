@@ -9,6 +9,11 @@ package object PredicateAbstractionForSoftwareVerification
 
   type AbstractDomain = List[Vector[Boolean]]
 
+  /**
+    *
+    * @param a
+    * @return
+    */
   implicit def booleanVector2String(a:Vector[Boolean]):String=
   {
     var s = "("
@@ -17,6 +22,12 @@ package object PredicateAbstractionForSoftwareVerification
     s = s.trim + ")"
     s
   }
+
+  /**
+    *
+    * @param a
+    * @return
+    */
   implicit def AbstractDomain2String(a:AbstractDomain):String = a match
   {
     case s :: rest => "[" + booleanVector2String(s) + " " + AbstractDomain2String(rest) + "]"
@@ -38,6 +49,11 @@ package object PredicateAbstractionForSoftwareVerification
 
   }
 
+  /**
+    *
+    * @param variables
+    * @return
+    */
   def havoc(variables:List[Variable]):Statement=
   {
     def makeAssignmentList(vars:List[Variable]):List[Assignment]=
@@ -53,6 +69,11 @@ package object PredicateAbstractionForSoftwareVerification
     Sequence(makeAssignmentList(variables): _*)
   }
 
+  /**
+    *
+    * @param w
+    * @return
+    */
   def desugar(w:While):Sequence = w match
   {
     case While(p, i, e, b) =>
@@ -63,7 +84,12 @@ package object PredicateAbstractionForSoftwareVerification
                         Assume(not(e))))
   }
 
-
+  /**
+    *
+    * @param q
+    * @param s
+    * @return
+    */
   def norm(q:Predicate, s:Statement):Predicate = s match
   {
     case a:Assignment            => strongestPostCondition(a, q)
@@ -77,11 +103,22 @@ package object PredicateAbstractionForSoftwareVerification
     case Empty()                 => True()
   }
 
+  /**
+    *
+    * @param s
+    * @return
+    */
   def traverse(s:Sequence):Statement = s match
   {
     case Sequence(a, rest@_*) => traverse(a, Sequence(rest: _*))
   }
 
+  /**
+    *
+    * @param c
+    * @param s
+    * @return
+    */
   def traverse(c:Statement, s:Statement):Statement = s match
   {
     case Assignment(_, _)          => s
@@ -90,12 +127,18 @@ package object PredicateAbstractionForSoftwareVerification
     case Choice(a, b)              => Choice(traverse(c, a), traverse(c, b))
     case Sequence(a)               => traverse(c, a)
     case Sequence(a, rest@_*)      => val aP = traverse(c, a)
-      val bP = traverse(Sequence(c, aP), Sequence(rest: _*))
-      Sequence(aP, bP)
+                                      val bP = traverse(Sequence(c, aP), Sequence(rest: _*))
+                                      Sequence(aP, bP)
     case While(p, i, e, _)         => val (j, b) = infer(c, s)
-      While(p, and(i, j), e, b)
+                                      While(p, and(i, j), e, b)
   }
 
+  /**
+    *
+    * @param c
+    * @param s
+    * @return
+    */
   def infer(c:Statement, s:Statement):(Expression, Statement)= s match
   {
     case While(p, i, e, b) =>
@@ -128,6 +171,12 @@ package object PredicateAbstractionForSoftwareVerification
     case _ => sys.error("expect parm s to be a While")
   }
 
+  /**
+    *
+    * @param expr
+    * @param pred
+    * @return
+    */
   def alpha(expr:Expression, pred:Predicates):AbstractDomain=
   {
     var ls:AbstractDomain = Nil
@@ -145,6 +194,12 @@ package object PredicateAbstractionForSoftwareVerification
     ls
   }
 
+  /**
+    *
+    * @param combination
+    * @param pred
+    * @return
+    */
   def gamma(combination:Vector[Boolean], pred:Predicates):Expression=
   {
     require(combination.length == pred.count, "gamma error: absDomain.size != predicates.count")
@@ -166,6 +221,12 @@ package object PredicateAbstractionForSoftwareVerification
     }
   }
 
+  /**
+    *
+    * @param absDomain
+    * @param pred
+    * @return
+    */
   def gamma(absDomain:AbstractDomain, pred:Predicates):Expression = absDomain match
   {
     case Nil       => sys.error("gamma(a:AbstractDomain, ..) a is Nil")
@@ -173,6 +234,13 @@ package object PredicateAbstractionForSoftwareVerification
     case a :: rest => and(gamma(a, pred), gamma(rest, pred))
   }
 
+  /**
+    *
+    * @param r
+    * @param q
+    * @param predicates
+    * @return
+    */
   def union(r:AbstractDomain, q:Expression, predicates: Predicates):AbstractDomain=
   {
     var result:AbstractDomain = Nil
@@ -185,7 +253,18 @@ package object PredicateAbstractionForSoftwareVerification
     r
   }
 
+  /**
+    *
+    * @param b
+    * @return
+    */
   implicit def boolean2Expression(b:Boolean):Expression = if(b) True() else False()
+
+  /**
+    *
+    * @param a
+    * @return
+    */
   implicit def booleanVectpr2Expression(a:Vector[Boolean]):Expression=
   {
     if(1 == a.length)
@@ -201,6 +280,11 @@ package object PredicateAbstractionForSoftwareVerification
     }
   }
 
+  /**
+    *
+    * @param absDomain
+    * @return
+    */
   implicit def abstractDomain2Expression(absDomain:AbstractDomain):Expression = absDomain match
   {
     case Nil            => sys.error("abstractDomain2Expression(a:AbstractDomain, ..) a is Nil")
