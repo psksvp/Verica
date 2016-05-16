@@ -7,10 +7,9 @@ package object PredicateAbstractionForSoftwareVerification
 {
   import psksvp.Verica.Lang._
 
-
   type AbstractDomain = List[Vector[Boolean]]
 
-  implicit def booleanArray2String(a:Vector[Boolean]):String=
+  implicit def booleanVector2String(a:Vector[Boolean]):String=
   {
     var s = "("
     for(b <- a)
@@ -20,7 +19,7 @@ package object PredicateAbstractionForSoftwareVerification
   }
   implicit def AbstractDomain2String(a:AbstractDomain):String = a match
   {
-    case s :: rest => "[" + booleanArray2String(s) + " " + AbstractDomain2String(rest) + "]"
+    case s :: rest => "[" + booleanVector2String(s) + " " + AbstractDomain2String(rest) + "]"
     case Nil       => ""
   }
 
@@ -187,7 +186,7 @@ package object PredicateAbstractionForSoftwareVerification
   }
 
   implicit def boolean2Expression(b:Boolean):Expression = if(b) True() else False()
-  implicit def booleanArray2Expression(a:Vector[Boolean]):Expression=
+  implicit def booleanVectpr2Expression(a:Vector[Boolean]):Expression=
   {
     if(1 == a.length)
       a(0)
