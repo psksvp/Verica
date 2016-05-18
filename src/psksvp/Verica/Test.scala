@@ -74,9 +74,30 @@ object Test
         |}
       """.stripMargin
 
-    val wh = Parser.parse(m)
-    println(wh)
-    println(traverse(wh.body))
+    //val wh = Parser.parse(m)
+    //println(wh)
+    //println(traverse(wh.body))
 
+    //awp("{R := R + Y  Q := Q + 1}", "x == R + Y * Q")
+
+    val prg:Statement=
+      """
+        |{
+        |  r := x
+        |  q := 0
+        |  [(true), x = r + y * q] while(y <= r)
+        |  {
+        |    r := r - y
+        |    q := q + 1
+        |  }
+        |}
+      """.stripMargin
+
+    val gg = awp(prg, """x == r + y * q /\ r < y""")
+    println(gg)
+
+    val kk = wvc(prg, """x == r + y * q /\ r < y""")
+    for(f <- kk)
+      println(f + " is " + Validity.check(f))
   }
 }

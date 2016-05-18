@@ -13,7 +13,7 @@ package object Verica
   type Formular  = Expression
 
   implicit def string2Statement(src:String):Statement=Parser.parseStatement(src)
-  implicit def string2Assignment(src:String):Assignment=Parser.parseStatement(src).asInstanceOf[Assignment]
+  //implicit def string2Assignment(src:String):Assignment=Parser.parseStatement(src).asInstanceOf[Assignment]
   implicit def string2Expression(src:String):Expression=Parser.parseExpression(src)
   implicit def string2ListOfVariable(src:String):Seq[Variable]=
   {
@@ -140,11 +140,52 @@ package object Verica
     * @param q
     * @return
     */
-  def strongestPostCondition(assignment: Assignment, q: Predicate):Expression=
+  def strongestPostCondition(assignment: Assignment, q:Predicate):Expression=
   {
     val vP = Variable(assignment.variable.name + "P")
     val eq = equal(assignment.variable, substituteVariable(assignment.variable, assignment.expr, vP))
     QE.solve(Exists(vP :: Nil),
              SuchThat(and(eq, substituteVariable(assignment.variable, inPredicate = q, withExp = vP))))
+  }
+
+  def strongestPostCondition(stmt:Statement, q:Predicate):Formular =
+  {
+    import psksvp.Verica.PredicateAbstractionForSoftwareVerification._
+    norm(q, stmt)
+  }
+  /**
+    * "Background reading on Hoare Logic by Mike Gordon"
+    * "page 73"
+    *
+    * @param stmt
+    * @param q
+    * @return
+    */
+  def awp(stmt:Statement, q:Formular):Formular = stmt match
+  {
+    case Assignment(v, e)      => substituteVariable(v, q, e)
+    case If(s, c1, c2)         => val c1Path = and(s, awp(c1, q))
+                                  val c2Path = and(not(s), awp(c2, q))
+                                  or(c1Path, c2Path)
+    case While(_, r, _, _)     => r
+    case Sequence(s1)          => awp(s1, q)
+    case Sequence(s1, rest@_*) => awp(s1, awp(Sequence(rest:_*), q))
+  }
+
+  /**
+    * "Background reading on Hoare Logic by Mike Gordon"
+    * "page 73"
+    * @param stmt
+    * @param q
+    * @return
+    */
+  def wvc(stmt:Statement, q:Formular):Set[Formular] = stmt match
+  {
+    case Assignment(_, _)      => Set()
+    case Sequence(s1)          => wvc(s1, q)
+    case Sequence(c1, rest@_*) => wvc(c1, awp(Sequence(rest:_*), q)) union wvc(Sequence(rest:_*), q)
+    case If(s, c1, c2)         => wvc(c1, q).union(wvc(c2, q))
+    case While(_, r, s, c)     => Set[Expression](implies(and(r, not(s)), q),
+                                                  implies(and(r, s), awp(c, r))) union wvc(c, r)
   }
 }

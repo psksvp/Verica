@@ -7,6 +7,11 @@ package object Z3
 {
   import psksvp.Verica.Lang._
 
+  /**
+    * Verica language to python string
+    * @param expr
+    * @return
+    */
   def pythonize(expr:Expression):String=expr match
   {
     case Binary(Or(), l, r)     => "Or(" + pythonize(l) + "," + pythonize(r) + ")"
@@ -20,7 +25,18 @@ package object Z3
   }
 
 
+  /**
+    *
+    * @param v
+    * @return
+    */
   def makeIntVariable(v:Variable):String = s"${v.name} = Int('${v.name}')"
+
+  /**
+    *
+    * @param s
+    * @return
+    */
   def makeIntVariables(s:Seq[Variable]):String =
   {
     var decl = ""
