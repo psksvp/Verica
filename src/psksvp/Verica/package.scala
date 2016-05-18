@@ -163,7 +163,7 @@ package object Verica
     */
   def awp(stmt:Statement, q:Formular):Formular = stmt match
   {
-    case Assignment(v, e)      => substituteVariable(v, q, e)
+    case Assignment(v, e)      => substituteVariable(v, inPredicate = q, withExp = e)
     case If(s, c1, c2)         => val c1Path = and(s, awp(c1, q))
                                   val c2Path = and(not(s), awp(c2, q))
                                   or(c1Path, c2Path)

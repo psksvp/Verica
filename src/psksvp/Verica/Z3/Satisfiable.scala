@@ -1,11 +1,9 @@
 package psksvp.Verica.Z3
 
-import psksvp.Verica._
-
 /**
-  * Created by psksvp on 10/05/2016.
+  * Created by psksvp on 18/05/2016.
   */
-object Validity
+object Satisfiable
 {
   import psksvp.Verica.Lang._
 
@@ -15,15 +13,15 @@ object Validity
     val vars = makeIntVariables(expr)
     val code =
       s"""
-        |from z3 import *
-        |$vars
-        |sOlVer = Solver()
-        |sOlVer.add(Not($pyExpr))
-        |print(sOlVer.check())
+         |from z3 import *
+         |$vars
+         |sOlVer = Solver()
+         |sOlVer.add($pyExpr))
+         |print(sOlVer.check())
       """.stripMargin.trim
     if("unsat" == psksvp.evalPython(code))
-      True()
-    else
       False()
+    else
+      True()
   }
 }

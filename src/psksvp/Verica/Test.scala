@@ -99,5 +99,8 @@ object Test
     val kk = wvc(prg, """x == r + y * q /\ r < y""")
     for(f <- kk)
       println(f + " is " + Validity.check(f))
+
+
+    println(strongestPostCondition("{x:=0 y:=0}", True()))
   }
 }
