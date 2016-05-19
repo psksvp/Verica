@@ -39,7 +39,7 @@ object QE
     // they are meant for easy debugging
     val code = makeZ3Python(quantifier, suchThat)
     val result = psksvp.evalPython(code)
-    val pyExpr = Parser.parseZ3ListOutput(result)
+    val pyExpr = Parser.parsePyZ3ListOutput(result)
     and(pyExpr)
   }
 
@@ -58,8 +58,8 @@ object QE
       |$varDecl
       |gOaL3fgrt = Goal()
       |gOaL3fgrt.add($qfType)
-      |t = Tactic('qe')
-      |print(t(gOaL3fgrt))
+      |tAcTiC = Tactic('qe')
+      |print(tAcTiC(gOaL3fgrt))
     """.stripMargin.trim
   }
 }

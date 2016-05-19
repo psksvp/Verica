@@ -167,14 +167,6 @@ object Parser extends JavaTokenParsers with PackratParsers
     }
   }
 
-  def parseBinaryExpression(src:String):Binary=
-  {
-    parseExpression(src) match
-    {
-      case b:Binary => b
-      case _        => sys.error("expression is not a Binary expression")
-    }
-  }
 
   def parseWhile2(src:String):While=
   {
@@ -185,7 +177,7 @@ object Parser extends JavaTokenParsers with PackratParsers
     }
   }
 
-  def parseZ3ListOutput(src:String):List[Expression]=
+  def parsePyZ3ListOutput(src:String):List[Expression]=
   {
     parseAll(z3pyListOutput, src) match
     {
@@ -194,7 +186,6 @@ object Parser extends JavaTokenParsers with PackratParsers
     }
   }
 
-  def parsePreidcate(src:String):Binary=parseBinaryExpression(src)
 }
 
 
