@@ -188,4 +188,7 @@ package object Verica
     case While(_, r, s, c)     => Set[Expression](implies(and(r, not(s)), q),
                                                   implies(and(r, s), awp(c, r))) union wvc(c, r)
   }
+
+
+  def verify(module:Module):Boolean=true
 }

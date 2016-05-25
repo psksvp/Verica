@@ -5,6 +5,9 @@ package psksvp.Verica.Z3
   */
 object Satisfiable
 {
+  case class Sat()
+  case class Unsat()
+
   import psksvp.Verica.Lang._
 
   def check(expr:Expression):Expression =

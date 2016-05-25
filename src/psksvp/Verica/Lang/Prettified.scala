@@ -25,12 +25,10 @@ object Prettified
     case Choice(a, b)     => s"${apply(a)} ☐ ${apply(b)}"
     case s:Sequence       => pretty(s)
     case p:Predicates     => pretty(p)
-    case While(p, i, e, s)=> indent()
-                             val out = s"[${apply(p)}, ${apply(i)}] while(${apply(e)})\n${apply(s)}"
-                             outdent()
-                             out
+    case While(p, i, e, s)=> s"while(${apply(e)}, [${apply(p)}, ${apply(i)}])\n${apply(s)}\n"
+
     case a:If             => pretty(a)
-    case Module(n, s)     => s"Module($n)\n${apply(s)}"
+    case Module(name, s)  => s"Module($name)\n${apply(s)}"
   }
 
   def pretty(iF:If): String =
@@ -38,9 +36,9 @@ object Prettified
     var out = "if(" + apply(iF.test) + ")\n"
     indent()
     out = out + apply(iF.stmtA)
-    out = out + indentString + "\nelse\n"
+    out = out + indentString + "\n"
     outdent()
-
+    out = out + "\nelse\n"
     indent()
     out = out + apply(iF.stmtB)
     outdent()
@@ -49,15 +47,14 @@ object Prettified
 
   def pretty(seq:Sequence): String =
   {
-    var out = indentString + "{\n"
+    var out =  indentString + "{\n"
     indent()
     for(s <- seq.stmts)
     {
       out = out.concat(s"${apply(s)}\n")
     }
     outdent()
-    out = indentString + out.concat("}\n")
-    out
+    out.concat(indentString + "}\n")
   }
 
   def pretty(p:Predicates):String=
@@ -65,7 +62,7 @@ object Prettified
     var s = ""
     for(e <- p.exprs)
     {
-      s = s.concat(s"(${apply(e)})")
+      s = s.concat(s"${apply(e)}")
     }
     s
   }

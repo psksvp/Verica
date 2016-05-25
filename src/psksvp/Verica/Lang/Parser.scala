@@ -116,9 +116,9 @@ object Parser extends JavaTokenParsers with PackratParsers
     case exp ~ stm => While(null, null, exp, stm)
   }
 
-  lazy val whileLoop2:PackratParser[While] = loopPredicateAndInvariant ~ "while(" ~ expression ~ ")" ~ statement ^^
+  lazy val whileLoop2:PackratParser[While] =  "while(" ~ expression ~ "," ~loopPredicateAndInvariant ~")" ~ statement ^^
   {
-    case pi ~ "while(" ~ exp ~ ")" ~ stm => While(pi.predicates, pi.invariant, exp, stm)
+    case "while(" ~ exp ~ "," ~ pi ~ ")" ~ stm => While(pi.predicates, pi.invariant, exp, stm)
   }
 
 

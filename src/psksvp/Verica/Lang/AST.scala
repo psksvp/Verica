@@ -9,7 +9,7 @@ abstract class Node(_children:List[Node])
   private val uuid = "L" + java.util.UUID.randomUUID().toString().replace("-", "")
   def id = uuid
   def children = _children
-  override def toString=Prettified(this)
+  override def toString=Prettified(this).replaceAll("(?m)^\\s*$[\n\r]{1,}", "")
 }
 
 
@@ -89,6 +89,13 @@ case class While(predicates:Predicates,
 case class If(test:Expression,
               stmtA:Statement,
               stmtB:Statement=Empty()) extends Statement(List(test, stmtA, stmtB))
+{
+  def linearized:Choice=
+  {
+    import psksvp.Verica._
+    Choice(Sequence(Assume(test), stmtA), Sequence(Assume(not(test)), stmtB))
+  }
+}
 
 case class Module(name:String,
                   sequence:Sequence) extends Node(List(sequence))

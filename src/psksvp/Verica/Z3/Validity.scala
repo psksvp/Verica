@@ -7,6 +7,9 @@ import psksvp.Verica._
   */
 object Validity
 {
+  case class Valid()
+  case class Invalid()
+
   import psksvp.Verica.Lang._
 
   def check(expr:Expression):Expression =

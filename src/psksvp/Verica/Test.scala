@@ -66,7 +66,7 @@ object Test
         |  assume(n > 0)
         |  i := 1
         |  s := 0
-        |  [(i >= 1)(i = s + 1)(i<1)(s>=0), true]while(i <= n)
+        |  while(i <= n, [(i >= 1)(i = s + 1)(i<1)(s>=0), true])
         |  {
         |    s := s + i
         |    i := i + 1
@@ -74,18 +74,18 @@ object Test
         |}
       """.stripMargin
 
-    //val wh = Parser.parse(m)
-    //println(wh)
-    //println(traverse(wh.body))
+    val wh = Parser.parse(m)
+    println(wh)
+    println(traverse(wh.body))
 
-    //awp("{R := R + Y  Q := Q + 1}", "x == R + Y * Q")
+    awp("{R := R + Y  Q := Q + 1}", "x == R + Y * Q")
 
     val prg:Statement=
       """
         |{
         |  r := x
         |  q := 0
-        |  [(true), x = r + y * q] while(y <= r)
+        |  while(y <= r, [(true), x = r + y * q])
         |  {
         |    r := r - y
         |    q := q + 1
@@ -102,5 +102,7 @@ object Test
 
 
     println(strongestPostCondition("{x:=0 y:=0}", True()))
+
+
   }
 }
