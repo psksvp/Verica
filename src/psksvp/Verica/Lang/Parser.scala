@@ -55,7 +55,8 @@ object Parser extends JavaTokenParsers with PackratParsers
 
   lazy val expressionList = repsep(expression, ",")
 
-  lazy val factor = "(" ~> expression <~ ")" |num|trueLiteral|falseLiteral|notExpr|notFunc|andFunc|orFunc|variable
+  lazy val factor = "(" ~> expression <~ ")" |num|trueLiteral|falseLiteral|notExpr|notFunc|andFunc|orFunc|
+                                              arrayVariable|variableLength|variable
 
   lazy val num = floatingPointNumber                    ^^ {t => IntegerValue(t.toInt) }
   lazy val trueLiteral = "true"                         ^^ {t => True()}
@@ -65,6 +66,13 @@ object Parser extends JavaTokenParsers with PackratParsers
   lazy val andFunc = "And(" ~> expressionList <~ ")"    ^^ {t => psksvp.Verica.and(t)}
   lazy val orFunc = "Or(" ~> expressionList <~ ")"      ^^ {t => psksvp.Verica.or(t)}
   lazy val variable = identifier                        ^^ {t => Variable(t)}
+
+  lazy val arrayVariable = variable ~ ("[" ~> expressionList <~ "]") ^^  // 1d array only at the moment
+  {
+    case v ~ indices => Variable(v.name, indices, ArrayVariable())
+  }
+
+  lazy val variableLength = variable <~ "." <~ "length" ^^ {t => Length(t)}
 
   lazy val numericP2OP = "*" | "/" ^^ {t => t}
   lazy val numericP1OP = "+" | "-" ^^ {t => t}
@@ -82,10 +90,24 @@ object Parser extends JavaTokenParsers with PackratParsers
     case "[" ~ pred ~ "," ~ inv ~ "]"  => PredicatesAndInvariant(pred, inv)
   }
 
+
+  //////////////////////////////////
   lazy val z3pyListOutput:PackratParser[List[Expression]] = "[[" ~ expressionList ~ "]]" ^^
   {
     case "[[" ~ exprLs ~ "]]" => exprLs
   }
+
+  ///////////////////////////////
+  lazy val typeClass:Parser[TypeClass] = integerType|booleanType
+  lazy val integerType = "Integer" ^^ {t => IntegerType()}
+  lazy val booleanType = "Boolean" ^^ {t => BooleanType()}
+  lazy val parameter:PackratParser[Parameter] = identifier ~ (":" ~> typeClass) ^^
+  {
+    case id ~ tpe => Parameter(id, tpe)
+  }
+
+  lazy val arguments = repsep(parameter, ",")
+  //lazy val function:PackratParser[Function] = "function" ~> identifier <~ "(" ~> arguments <~ ")" ~
 
   /////////////////////////////
   // statement

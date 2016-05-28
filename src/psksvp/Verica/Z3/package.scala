@@ -30,7 +30,12 @@ package object Z3
     * @param v
     * @return
     */
-  def makeIntVariable(v:Variable):String = s"${v.name} = Int('${v.name}')"
+  def makeIntVariable(v:Variable):String = v match
+  {
+    case Variable(n, Nil, ValueVariable()) => s"$n = Int('$n')"
+    case Variable(n, _, ArrayVariable())   => s"$n = Array('$n', IntSort(), IntSort())"
+  }
+
 
   /**
     *

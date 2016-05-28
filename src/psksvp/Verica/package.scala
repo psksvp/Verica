@@ -79,10 +79,10 @@ package object Verica
     {
       e match
       {
-        case Variable(name) if name == v.name => withExp
-        case Binary(op, l, r)                 => Binary(op, substitutionOf(l), substitutionOf(r))
-        case Unary(op, exp)                   => Unary(op, substitutionOf(exp))
-        case _                                => e
+        case Variable(name, _, _) if name == v.name => withExp
+        case Binary(op, l, r)                       => Binary(op, substitutionOf(l), substitutionOf(r))
+        case Unary(op, exp)                         => Unary(op, substitutionOf(exp))
+        case _                                      => e
       }
     }
 
@@ -142,7 +142,9 @@ package object Verica
     */
   def strongestPostCondition(assignment: Assignment, q:Predicate):Expression=
   {
-    val vP = Variable(assignment.variable.name + "P")
+    val vP = Variable(assignment.variable.name + "P",
+                      assignment.variable.index,
+                      assignment.variable.kind)
     val eq = equal(assignment.variable, substituteVariable(assignment.variable, assignment.expr, vP))
     QE.solve(Exists(vP :: Nil),
              SuchThat(and(eq, substituteVariable(assignment.variable, inPredicate = q, withExp = vP))))

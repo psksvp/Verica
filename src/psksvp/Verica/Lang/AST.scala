@@ -46,11 +46,15 @@ abstract class Value[T:TypeTag](_value:T) extends Expression(Nil)
 
 case class IntegerValue(v:Int) extends Value[Int](v)
 abstract class BooleanValue(v:Boolean) extends Value[Boolean](v)
+
 case class True() extends BooleanValue(true)
 case class False() extends BooleanValue(false)
 
+abstract class TypeClass extends Node(Nil)
+case class IntegerType() extends TypeClass
+case class BooleanType() extends TypeClass
+
 case class Literal(representation:String) extends Expression(Nil)
-case class Variable(name:String) extends Expression(Nil)
 
 case class Unary(operator: Operator,
                  expr:Expression) extends Expression(List(operator, expr))
@@ -59,8 +63,22 @@ case class Binary(operator: Operator,
                   exprLeft:Expression,
                   exprRight:Expression) extends Expression(List(operator, exprLeft, exprRight))
 
+abstract class VariableKind extends Node(Nil)
+case class ArrayVariable() extends VariableKind
+case class ValueVariable() extends VariableKind
 
+case class Variable(name:String,
+                    index:List[Expression] = Nil,
+                    kind:VariableKind = ValueVariable()) extends Expression(Nil)
 
+case class Length(v:Variable) extends Expression(List(v))
+
+case class Parameter(name:String, typeClass:TypeClass) extends Node(Nil)
+case class Function(name:String,
+                    typeClass:TypeClass,
+                    parameters:List[Parameter],
+                    body:Sequence) extends Node(Nil)
+////////////////////////////////////////////////////////////////////////
 case class Predicates(exprs:Expression*) extends Node(exprs.toList)
 {
   def count = exprs.size
@@ -71,6 +89,7 @@ case class PredicatesAndInvariant(predicates: Predicates,
                                    invariant: Expression) extends Node(List(predicates, invariant))
 
 abstract class Statement(children:List[Node]) extends Node(children)
+case class VariableDeclation(name:String, typeClass:TypeClass) extends Statement(Nil)
 case class Empty() extends Statement(Nil)
 case class Assignment(variable:Variable, expr:Expression) extends Statement(List(variable, expr))
 case class Assert(expr:Expression) extends Statement(List(expr))
@@ -86,14 +105,14 @@ case class While(predicates:Predicates,
                  expr:Expression,
                  stmt:Statement) extends Statement(List(expr, stmt))
 
-case class If(test:Expression,
+case class If(e:Expression,
               stmtA:Statement,
-              stmtB:Statement=Empty()) extends Statement(List(test, stmtA, stmtB))
+              stmtB:Statement=Empty()) extends Statement(List(e, stmtA, stmtB))
 {
-  def linearized:Choice=
+  def toChoice:Choice=
   {
     import psksvp.Verica._
-    Choice(Sequence(Assume(test), stmtA), Sequence(Assume(not(test)), stmtB))
+    Choice(Sequence(Assume(e), stmtA), Sequence(Assume(not(e)), stmtB))
   }
 }
 
@@ -104,4 +123,3 @@ case class Module(name:String,
 }
 
 
-abstract class Formula(children:List[Node]) extends Expression(children)

@@ -133,6 +133,14 @@ package object PredicateAbstractionForSoftwareVerification
                                       While(p, and(i, j), e, b)
   }
 
+  /*
+  def makePredicates(w:While, c:Statement):List[Predicate]=
+  {
+    val t = targets(w)
+    val n = norm(True(), c)
+
+  }*/
+
   /**
     *
     * @param c

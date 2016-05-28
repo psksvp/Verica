@@ -103,6 +103,10 @@ object Test
 
     println(strongestPostCondition("{x:=0 y:=0}", True()))
 
-
+    val mm:Expression = "a + b[i * 2, j + 1] = a + x[b.length]"
+    println(mm)
+    println(Z3.pythonize(mm))
+    val vari = Variable("h", List("1"), ArrayVariable())
+    println(Z3.makeIntVariable(vari))
   }
 }
