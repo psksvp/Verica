@@ -18,7 +18,9 @@ package object Z3
     case Binary(And(), l, r)    => "And(" + pythonize(l) + "," + pythonize(r) + ")"
     case Binary(Equal(), l, r)  =>  pythonize(l) + "==" + pythonize(r)
     case Binary(Implies(), l, r)=> "Implies(" + pythonize(l) + "," + pythonize(r) + ")"
+    case Binary(op, l, r)       => pythonize(l) + op.symbol + pythonize(r)
     case Unary(Negation(), l)   => "Not(" + pythonize(l) + ")"
+    case Length(v)              => s"lengthOf_${v.name}"
     case True()                 => "True"
     case False()                => "False"
     case _                      => expr.toString

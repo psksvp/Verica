@@ -100,7 +100,9 @@ package object PredicateAbstractionForSoftwareVerification
     case Sequence(a, b)          => norm(norm(q, a), b)
     case Sequence(a, b, rest@_*) => norm(norm(q, Sequence(a, b)), Sequence(rest:_*))
     case sw:While                => norm(q, desugar(sw))
-    case Empty()                 => True()
+    case Empty()                 => and(q, True())
+    case Ensure(_)               => and(q, True())
+    case VariableDeclaration(_,_)=> and(q, True())
   }
 
   /**
@@ -108,9 +110,10 @@ package object PredicateAbstractionForSoftwareVerification
     * @param s
     * @return
     */
-  def traverse(s:Sequence):Statement = s match
+  def traverse(s:Statement):Statement = s match
   {
     case Sequence(a, rest@_*) => traverse(a, Sequence(rest: _*))
+    case _                    => traverse(Empty(), s)
   }
 
   /**
@@ -124,6 +127,9 @@ package object PredicateAbstractionForSoftwareVerification
     case Assignment(_, _)          => s
     case Assert(_)                 => s
     case Assume(_)                 => s
+    case Ensure(_)                 => s
+    case Return(_)                 => s
+    case VariableDeclaration(_,_)  => s
     case Choice(a, b)              => Choice(traverse(c, a), traverse(c, b))
     case Sequence(a)               => traverse(c, a)
     case Sequence(a, rest@_*)      => val aP = traverse(c, a)

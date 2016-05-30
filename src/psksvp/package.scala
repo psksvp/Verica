@@ -57,6 +57,9 @@ package object psksvp
 
   def evalPython(src:String, python:String="/usr/bin/python"):String=
   {
+    //println("-----------------------")
+    //println(src)
+    //println("------------------------")
     import sys.process._
     val code = src.replaceAll("\n", ";").replaceAll(";;", ";").trim
     (Seq(python.trim, "-c", code).!!).trim

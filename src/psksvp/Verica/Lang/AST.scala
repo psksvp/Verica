@@ -50,9 +50,13 @@ abstract class BooleanValue(v:Boolean) extends Value[Boolean](v)
 case class True() extends BooleanValue(true)
 case class False() extends BooleanValue(false)
 
-abstract class TypeClass extends Node(Nil)
-case class IntegerType() extends TypeClass
-case class BooleanType() extends TypeClass
+abstract class TypeClass(name:String) extends Node(Nil)
+{
+  override def toString=name
+}
+case class IntegerType() extends TypeClass("Integer")
+case class BooleanType() extends TypeClass("Boolean")
+case class ArrayType(typeClass:TypeClass) extends TypeClass(s"Array<$typeClass>")
 
 case class Literal(representation:String) extends Expression(Nil)
 
@@ -73,11 +77,16 @@ case class Variable(name:String,
 
 case class Length(v:Variable) extends Expression(List(v))
 
+case class InvokeExpression(moduleName:String,
+                          functionName:String,
+                            parameters:List[Expression]) extends Expression(parameters)
+
+
 case class Parameter(name:String, typeClass:TypeClass) extends Node(Nil)
 case class Function(name:String,
-                    typeClass:TypeClass,
                     parameters:List[Parameter],
-                    body:Sequence) extends Node(Nil)
+                    typeClass:TypeClass,
+                    body:Statement) extends Node(Nil)
 ////////////////////////////////////////////////////////////////////////
 case class Predicates(exprs:Expression*) extends Node(exprs.toList)
 {
@@ -89,11 +98,21 @@ case class PredicatesAndInvariant(predicates: Predicates,
                                    invariant: Expression) extends Node(List(predicates, invariant))
 
 abstract class Statement(children:List[Node]) extends Node(children)
-case class VariableDeclation(name:String, typeClass:TypeClass) extends Statement(Nil)
+case class VariableDeclaration(name:String, typeClass:TypeClass) extends Statement(Nil)
 case class Empty() extends Statement(Nil)
 case class Assignment(variable:Variable, expr:Expression) extends Statement(List(variable, expr))
-case class Assert(expr:Expression) extends Statement(List(expr))
-case class Assume(expr:Expression) extends Statement(List(expr))
+case class Return(expression:Expression) extends Statement(List(expression))
+
+abstract class VerificationStatment(val name:String,
+                                    val expression:Expression) extends Statement(List(expression))
+case class Assert(expr:Expression) extends VerificationStatment("assert", expr)
+case class Assume(expr:Expression) extends VerificationStatment("assume", expr)
+case class Ensure(expr:Expression) extends VerificationStatment("ensure", expr)
+
+case class InvokeStatement(moduleName:String,
+                           functionName:String,
+                           parameters:List[Expression]) extends Statement(parameters)
+
 case class Sequence(stmts:Statement*) extends Statement(stmts.toList)
 {
   def count=stmts.size
@@ -117,9 +136,17 @@ case class If(e:Expression,
 }
 
 case class Module(name:String,
-                  sequence:Sequence) extends Node(List(sequence))
+                  functions:List[Function]) extends Node(functions)
 {
-  def body = sequence
+  def function(name:String):Option[Function] =
+  {
+    for(f <- functions)
+    {
+      if(f.name == name)
+        return Some(f)
+    }
+    None
+  }
 }
 
 

@@ -9,78 +9,85 @@ import psksvp.Verica.PredicateAbstractionForSoftwareVerification._
   */
 object Test
 {
+
   import psksvp.Verica.Lang._
 
+  val helloworld =
+    """
+      |module(HelloWorld)
+      |{
+      |  function sum(n:Integer):Integer
+      |  {
+      |    assume(n > 0)
+      |    local i:Integer
+      |    local s:Integer
+      |    i := 1
+      |    s := 0
+      |    while(i <= n, [(i >= 1)(i = s + 1)(i<1)(s>=0), true])
+      |    {
+      |     s := s + i
+      |     i := i + 1
+      |    }
+      |    return(s)
+      |  }
+      |
+      |  function sumArray(a:Array<Integer>):Integer
+      |  {
+      |    local i:Integer
+      |    local s:Integer
+      |    i := 0
+      |    s := 0
+      |    while(i < a.length, [(i >= 0)(i < a.length)(s >= 0), true])
+      |    {
+      |      s := s + a[i]
+      |      i := i + 1
+      |    }
+      |    return(s)
+      |    ensure(s >= 0)
+      |  }
+      |
+      |  function testing(a:Array<Integer>):Integer
+      |  {
+      |    local i:Integer
+      |    local s:Integer
+      |    i := 0
+      |    s := 0
+      |    while(i < a.length, [(i >= 0)(i < a.length)(s >= 0), true])
+      |    {
+      |      s := s + a[i]
+      |      i := i + 1
+      |      k := HelloWorld.sum(s)
+      |    }
+      |    io.println(1+2, math.cos(23), i /\ j)
+      |    return(s)
+      |  }
+      |}
+    """.stripMargin
 
-  def main(args:Array[String]):Unit=
+  def testParsing: Unit =
   {
-    val prog9 =
-      """
-        |module(main)
-        |{
-        |  if(x != 0)
-        |    z := x
-        |  else
-        |    z := x + 1
-        |}
-      """.stripMargin
-
-    val prog1 =
-      """
-        |module(main)
-        |{
-        |  x := x + 1
-        |}
-      """.stripMargin
-
-
-
-
-    /*
-    val h = QE.solve(Exists("xp"), SuchThat("""(x = xp - 5) /\ (xp >= 15)"""))
-    println(h)
-    val g = QE.solve(Exists("ip"), SuchThat("""i = ip + 1 /\ ip >= 0 /\ y2 = ip /\ r = xs + y1 /\ xslen > ip"""))
-    println(g)
-    println(strongestPostCondition("x := x - 5", "x >= 15"))
-
-    println(Validity.check("x + 1 = 2 -> x = 1"))
-
-
-    val r = alpha("""i = 0 /\ r = 0""", Predicates("i>=0", "r >= 0"))
-    println(r + "")
-    println(gamma(r, Predicates("i>=0", "r >= 0")))
-
-    val a:AbstractDomain = List(Vector(true, false, true), Vector(true, true, true), Vector(true, false, false))
-    val expr:Expression = a
-    println(expr)
-
-    println("---------")
-    val aa:AbstractDomain = List(Vector(true, false), Vector(true, true), Vector(true, false))
-    println(gamma(aa, Predicates("i>=0", "r >= 0")))
-    */
-
-    val m =
-      """
-        |module(bababa)
-        |{
-        |  assume(n > 0)
-        |  i := 1
-        |  s := 0
-        |  while(i <= n, [(i >= 1)(i = s + 1)(i<1)(s>=0), true])
-        |  {
-        |    s := s + i
-        |    i := i + 1
-        |  }
-        |}
-      """.stripMargin
-
-    val wh = Parser.parse(m)
+    val wh = Parser.parse(helloworld)
     println(wh)
-    println(traverse(wh.body))
+  }
 
+  def testInfer: Unit =
+  {
+    val wh = Parser.parse(helloworld)
+    println(wh)
+    val afterInfer = wh.function("sum") match
+    {
+      case Some(f) => Function(f.name, f.parameters, f.typeClass, traverse(f.body))
+      case None => sys.error("function sum does not exist")
+    }
+
+    println(afterInfer)
+  }
+
+  def testVC: Unit =
+  {
     awp("{R := R + Y  Q := Q + 1}", "x == R + Y * Q")
 
-    val prg:Statement=
+    val prg: Statement =
       """
         |{
         |  r := x
@@ -97,16 +104,48 @@ object Test
     println(gg)
 
     val kk = wvc(prg, """x == r + y * q /\ r < y""")
-    for(f <- kk)
+    for (f <- kk)
       println(f + " is " + Validity.check(f))
 
 
     println(strongestPostCondition("{x:=0 y:=0}", True()))
+  }
 
-    val mm:Expression = "a + b[i * 2, j + 1] = a + x[b.length]"
+  def testInferWithArray: Unit =
+  {
+    val f1: Function =
+      """
+        |  function sumArray(a:Array<Integer>):Integer
+        |  {
+        |    local i:Integer
+        |    local r:Integer
+        |    i := 0
+        |    r := 0
+        |    while(i < a.length, [(r >= 0)(i >= 0), true])
+        |    {
+        |      r := r + a[i]
+        |      i := i + 1
+        |    }
+        |    return(s)
+        |    ensure(s >= 0)
+        |    ensure(i == a.length)
+        |  }
+      """.stripMargin
+
+    println(f1)
+    println("post cond of f1 is " + postConditionOf(f1))
+    traverse(f1.body)
+  }
+
+  def testPythonize: Unit=
+  {
+    val mm:Expression = """(a < b.length) /\ (i > 0)"""
     println(mm)
     println(Z3.pythonize(mm))
-    val vari = Variable("h", List("1"), ArrayVariable())
-    println(Z3.makeIntVariable(vari))
+  }
+
+  def main(args:Array[String]):Unit=
+  {
+    testInferWithArray
   }
 }

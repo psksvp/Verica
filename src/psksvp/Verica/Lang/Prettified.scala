@@ -1,5 +1,7 @@
 package psksvp.Verica.Lang
 
+import javax.swing.JPopupMenu.Separator
+
 /**
   * Created by psksvp on 13/04/2016.
   */
@@ -16,28 +18,39 @@ object Prettified
     case op:Operator                      => op.symbol
     case v:Value[_]                       => v.value.toString
     case Variable(v, _, ValueVariable())  => v
+    case Variable(v, Nil, ArrayVariable())=> v
     case Variable(v, il, ArrayVariable()) => v + "[" + pretty(il) + "]"
     case Length(v)                        => v + ".length"
     case Literal(l)                       => l
-    case Assert(e)                        => s"Assert(${apply(e)})"
-    case Assume(e)                        => s"Assume(${apply(e)})"
+    case i:TypeClass                      => i.toString
+    case v:VerificationStatment           => s"${v.name}(${apply(v.expression)})"
+    case VariableDeclaration(n, t)        => s"local $n:${apply(t)}"
+    case InvokeExpression(m, f, args)     => s"$m.$f(" + pretty(args) + ")"
+    case InvokeStatement(m, f, args)      => s"$m.$f(" + pretty(args) + ")"
+    case Return(e)                        => s"return(${apply(e)})"
     case Binary(op, l, r)                 => s"(${apply(l)} ${apply(op)} ${apply(r)})"
     case Unary(op, opd)                   => s"${apply(op)}${apply(opd)}"
     case Assignment(v, e)                 => s"${apply(v)} := ${apply(e)}"
     case Choice(a, b)                     => s"${apply(a)} ☐ ${apply(b)}"
     case s:Sequence                       => pretty(s)
     case p:Predicates                     => pretty(p)
-    case While(p, i, e, s)                => s"while(${apply(e)}, [${apply(p)}, ${apply(i)}])\n${apply(s)}\n"
-
+    case While(p, i, e, s)                => s"while(${apply(e)}, [${apply(p)}, ${apply(i)}])\n${apply(s)}"
+    case Parameter(n, t)                  => s"$n:$t"
+    case Function(n, args, tpe, body)     => s"function $n(${pretty(args)}):${apply(tpe)}\n${apply(body)}"
     case a:If                             => pretty(a)
-    case Module(name, s)                  => s"Module($name)\n${apply(s)}"
+    case Module(name, f)                  => val h = s"Module($name)\n{\n"
+                                             indent()
+                                             val i = indentString + s"${pretty(f, "  ")}"
+                                             outdent()
+                                             h + i + "\n}"
   }
 
-  def pretty(il:List[Expression]):String = il match
+
+  def pretty[T <: Node](il:List[T], separator: String = ", "):String = il match
   {
     case Nil       => ""
     case e :: Nil  => apply(e)
-    case e :: rest => apply(e) + ", " + pretty(rest)
+    case e :: rest => apply(e) + separator + pretty[T](rest)
   }
 
   def pretty(iF:If): String =

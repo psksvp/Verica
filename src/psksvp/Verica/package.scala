@@ -13,8 +13,8 @@ package object Verica
   type Formular  = Expression
 
   implicit def string2Statement(src:String):Statement=Parser.parseStatement(src)
-  //implicit def string2Assignment(src:String):Assignment=Parser.parseStatement(src).asInstanceOf[Assignment]
   implicit def string2Expression(src:String):Expression=Parser.parseExpression(src)
+  implicit def string2Function(src:String):Function=Parser.parseFunction(src)
   implicit def string2ListOfVariable(src:String):Seq[Variable]=
   {
     var r:List[Variable] = Nil
@@ -29,6 +29,7 @@ package object Verica
     case v:Variable       => List(v)
     case Binary(op, l, r) => listOfVariablesIn(l) ::: listOfVariablesIn(r)
     case Unary(op, e)     => listOfVariablesIn(e)
+    case Length(v)        => List(Variable(s"lengthOf_${v.name}"))
     case _                => Nil
   }
 
@@ -189,6 +190,23 @@ package object Verica
     case If(s, c1, c2)         => wvc(c1, q).union(wvc(c2, q))
     case While(_, r, s, c)     => Set[Expression](implies(and(r, not(s)), q),
                                                   implies(and(r, s), awp(c, r))) union wvc(c, r)
+  }
+
+  def postConditionOf(ls:List[Statement]):List[Expression] = ls match
+  {
+    case Nil       => Nil
+    case h :: rest => h match
+                      {
+                        case Ensure(e) => e :: postConditionOf(rest)
+                        case _         => postConditionOf(rest)
+                      }
+  }
+
+  def postConditionOf(function:Function):Expression = function.body match
+  {
+    case s:Sequence => and(postConditionOf(s.stmts.toList))
+    case Ensure(e)  => e
+    case _          => sys.error(s"function ${function.name} has no postcondition")
   }
 
 

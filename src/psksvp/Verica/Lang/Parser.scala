@@ -56,7 +56,7 @@ object Parser extends JavaTokenParsers with PackratParsers
   lazy val expressionList = repsep(expression, ",")
 
   lazy val factor = "(" ~> expression <~ ")" |num|trueLiteral|falseLiteral|notExpr|notFunc|andFunc|orFunc|
-                                              arrayVariable|variableLength|variable
+                                              arrayVariable|variableLength|invokeExp|z3pyLengthOfArray|variable
 
   lazy val num = floatingPointNumber                    ^^ {t => IntegerValue(t.toInt) }
   lazy val trueLiteral = "true"                         ^^ {t => True()}
@@ -66,6 +66,10 @@ object Parser extends JavaTokenParsers with PackratParsers
   lazy val andFunc = "And(" ~> expressionList <~ ")"    ^^ {t => psksvp.Verica.and(t)}
   lazy val orFunc = "Or(" ~> expressionList <~ ")"      ^^ {t => psksvp.Verica.or(t)}
   lazy val variable = identifier                        ^^ {t => Variable(t)}
+  lazy val invokeExp = identifier ~ "." ~ identifier ~ ("(" ~> expressionList <~ ")")  ^^
+  {
+    case modName ~ _ ~ funcName ~ args => InvokeExpression(modName, funcName, args)
+  }
 
   lazy val arrayVariable = variable ~ ("[" ~> expressionList <~ "]") ^^  // 1d array only at the moment
   {
@@ -80,6 +84,8 @@ object Parser extends JavaTokenParsers with PackratParsers
   lazy val logicOP = """/\""" | """\/""" | "->" ^^ {t => t}
 
 
+  ///////////////////////////////
+  // predicates and Invariant
   lazy val predicates:PackratParser[Predicates] = (("(" ~> expression <~ ")") *) ^^
   {
     case p:Seq[Expression] => psksvp.Verica.Lang.Predicates(p:_*)
@@ -92,26 +98,41 @@ object Parser extends JavaTokenParsers with PackratParsers
 
 
   //////////////////////////////////
+  /// z3python output
+  lazy val z3pyLengthOfArray:PackratParser[Length] = "lengthOf_" ~> identifier ^^
+  {
+    t => Length(Variable(t, Nil, ArrayVariable()))
+  }
+
   lazy val z3pyListOutput:PackratParser[List[Expression]] = "[[" ~ expressionList ~ "]]" ^^
   {
     case "[[" ~ exprLs ~ "]]" => exprLs
   }
 
   ///////////////////////////////
-  lazy val typeClass:Parser[TypeClass] = integerType|booleanType
+  // types
+  lazy val typeClass:PackratParser[TypeClass] = integerType|booleanType|arrayType
   lazy val integerType = "Integer" ^^ {t => IntegerType()}
   lazy val booleanType = "Boolean" ^^ {t => BooleanType()}
+  lazy val arrayType = "Array" ~> ("<" ~> typeClass <~ ">") ^^ {t => ArrayType(t)}
+
+  ///////////////////////////////
+  // function
   lazy val parameter:PackratParser[Parameter] = identifier ~ (":" ~> typeClass) ^^
   {
     case id ~ tpe => Parameter(id, tpe)
   }
 
-  lazy val arguments = repsep(parameter, ",")
-  //lazy val function:PackratParser[Function] = "function" ~> identifier <~ "(" ~> arguments <~ ")" ~
+  lazy val arguments:Parser[List[Parameter]] = repsep(parameter, ",")
+  lazy val function:PackratParser[Function] = "function" ~ identifier ~ "(" ~ arguments ~ ")" ~ ":" ~ typeClass ~ sequence ^^
+  {
+    case f ~ name ~ op ~ args ~ cp ~ cl ~ tpe ~ body => Function(name, args, tpe, body)
+  }
 
   /////////////////////////////
   // statement
-  lazy val statement:PackratParser[Statement] = assert|assume|whileLoop2|whileLoop|ifElse|assignment|sequence
+  lazy val statement:PackratParser[Statement] = invokeStm|assert|assume|ensure|returns|varDecl|whileLoop2|
+                                                whileLoop|ifElse|assignment|sequence
 
   lazy val assignment:PackratParser[Assignment] = identifier ~ (":=" ~> expression) ^^
   {
@@ -126,6 +147,26 @@ object Parser extends JavaTokenParsers with PackratParsers
   lazy val assume:PackratParser[Assume] = "assume" ~> ("(" ~> expression <~ ")") ^^
   {
     case exp  => Assume(exp)
+  }
+
+  lazy val ensure:PackratParser[Ensure] = "ensure" ~> ("(" ~> expression <~ ")") ^^
+  {
+    case exp  => Ensure(exp)
+  }
+
+  lazy val returns:PackratParser[Return] = "return" ~> ("(" ~> expression <~ ")") ^^
+  {
+    case exp  => Return(exp)
+  }
+
+  lazy val varDecl:PackratParser[VariableDeclaration] = "local" ~> parameter ^^
+  {
+    case p => VariableDeclaration(p.name, p.typeClass)
+  }
+
+  lazy val invokeStm:PackratParser[InvokeStatement] = identifier ~ "." ~ identifier ~ ("(" ~> expressionList <~ ")")  ^^
+  {
+    case modName ~ _ ~ funcName ~ args => InvokeStatement(modName, funcName, args)
   }
 
   lazy val sequence:PackratParser[Sequence] = ("{" ~> (statement *) <~ "}") ^^
@@ -154,19 +195,29 @@ object Parser extends JavaTokenParsers with PackratParsers
       }
   }
 
-  lazy val module:PackratParser[Module] = (("module(" ~> identifier <~ ")") ~ sequence) ^^
+  lazy val module:PackratParser[Module] = ("module(" ~> identifier <~ ")") ~ ("{" ~> (function *) <~ "}") ^^
   {
-    case name ~ seqq => Module(name, seqq)
+    case name ~ funcs => Module(name, funcs)
   }
 
 
 
   //////////////////////////////////////////////////
+  // parsing call
   def parse(src:String):Module=
   {
     parseAll(module, src) match
     {
       case Success(topNode, _) => topNode //.asInstanceOf[Module]
+      case f                   => sys.error("error while parsing: " + f)
+    }
+  }
+
+  def parseFunction(src:String):Function=
+  {
+    parseAll(function, src) match
+    {
+      case Success(topNode, _) => topNode
       case f                   => sys.error("error while parsing: " + f)
     }
   }

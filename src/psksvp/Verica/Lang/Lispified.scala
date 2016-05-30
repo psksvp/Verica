@@ -5,6 +5,7 @@ package psksvp.Verica.Lang
   */
 object Lispified
 {
+  /*
   def apply(n:Node):String = n match
   {
     case op:Operator             => op.symbol
@@ -21,5 +22,5 @@ object Lispified
     case Predicates(p, rest@ _*) => s"${apply(p)}" + apply(Predicates(rest:_*))
     case While(p, i, e, s)       => s"(while {${apply(p)}, ${apply(i)}} ${apply(e)}) ${apply(s)})"
     case _                       => ""
-  }
+  }*/
 }
