@@ -173,6 +173,7 @@ package object Verica
     case While(_, r, _, _)     => r
     case Sequence(s1)          => awp(s1, q)
     case Sequence(s1, rest@_*) => awp(s1, awp(Sequence(rest:_*), q))
+    //case _                     => True()
   }
 
   /**
@@ -190,6 +191,7 @@ package object Verica
     case If(s, c1, c2)         => wvc(c1, q) union wvc(c2, q)
     case While(_, r, s, c)     => Set[Expression](implies(and(r, not(s)), q),
                                                   implies(and(r, s), awp(c, r))) union wvc(c, r)
+    case _                     => Set()
   }
 
   def postConditionOf(ls:List[Statement]):List[Expression] = ls match

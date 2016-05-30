@@ -126,16 +126,18 @@ object Test
         |      r := r + a[i]
         |      i := i + 1
         |    }
-        |    return(s)
-        |    ensure(s >= 0)
+        |
         |  }
       """.stripMargin
 
     println(f1)
-    println("post cond of f1 is " + postConditionOf(f1))
-    val output = traverse(Empty(), f1.body)
-    println(output)
-    //println("post con of output is " + postConditionOf(output))
+    //println("post cond of f1 is " + postConditionOf(f1))
+    val f2 = Function(f1.name, f1.parameters, f1.typeClass, traverse(Empty(), f1.body))
+    println(f2)
+    for(vc <- wvc(f2.body, "r >= 0"))
+    {
+      println(vc + " is " + Validity.check(vc))
+    }
   }
 
   def testPythonize: Unit=

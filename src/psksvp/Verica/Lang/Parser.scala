@@ -124,7 +124,8 @@ object Parser extends JavaTokenParsers with PackratParsers
   }
 
   lazy val arguments:Parser[List[Parameter]] = repsep(parameter, ",")
-  lazy val function:PackratParser[Function] = "function" ~ identifier ~ "(" ~ arguments ~ ")" ~ ":" ~ typeClass ~ sequence ^^
+  lazy val function:PackratParser[Function] =
+    "function" ~ identifier ~ "(" ~ arguments ~ ")" ~ ":" ~ typeClass ~ sequence ^^
   {
     case f ~ name ~ op ~ args ~ cp ~ cl ~ tpe ~ body => Function(name, args, tpe, body)
   }
