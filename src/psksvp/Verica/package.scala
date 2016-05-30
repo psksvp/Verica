@@ -187,7 +187,7 @@ package object Verica
     case Assignment(_, _)      => Set()
     case Sequence(s1)          => wvc(s1, q)
     case Sequence(c1, rest@_*) => wvc(c1, awp(Sequence(rest:_*), q)) union wvc(Sequence(rest:_*), q)
-    case If(s, c1, c2)         => wvc(c1, q).union(wvc(c2, q))
+    case If(s, c1, c2)         => wvc(c1, q) union wvc(c2, q)
     case While(_, r, s, c)     => Set[Expression](implies(and(r, not(s)), q),
                                                   implies(and(r, s), awp(c, r))) union wvc(c, r)
   }

@@ -128,13 +128,14 @@ object Test
         |    }
         |    return(s)
         |    ensure(s >= 0)
-        |    ensure(i == a.length)
         |  }
       """.stripMargin
 
     println(f1)
     println("post cond of f1 is " + postConditionOf(f1))
-    traverse(f1.body)
+    val output = traverse(Empty(), f1.body)
+    println(output)
+    //println("post con of output is " + postConditionOf(output))
   }
 
   def testPythonize: Unit=
