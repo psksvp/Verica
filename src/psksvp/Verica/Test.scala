@@ -4,6 +4,7 @@ import psksvp.Verica.Z3.{Exists, QE, SuchThat, Validity}
 import psksvp.Verica.PredicateAbstractionForSoftwareVerification._
 
 
+
 /**
   * Created by psksvp on 11/04/2016.
   */
@@ -121,7 +122,7 @@ object Test
         |    local r:Integer
         |    i := 0
         |    r := 0
-        |    while(i < a.length, [(r >= 0)(i >= 0), true])
+        |    while(i < a.length, [(r >= 0)(i >= 0)(r < 0)(i < 0), true ])
         |    {
         |      r := r + a[i]
         |      i := i + 1
@@ -131,13 +132,9 @@ object Test
       """.stripMargin
 
     println(f1)
-    //println("post cond of f1 is " + postConditionOf(f1))
     val f2 = Function(f1.name, f1.parameters, f1.typeClass, traverse(Empty(), f1.body))
     println(f2)
-    for(vc <- wvc(f2.body, "r >= 0"))
-    {
-      println(vc + " is " + Validity.check(vc))
-    }
+    println(verify(f2, "r >= 0"))
   }
 
   def testPythonize: Unit=
@@ -146,6 +143,7 @@ object Test
     println(mm)
     println(Z3.pythonize(mm))
   }
+
 
   def main(args:Array[String]):Unit=
   {

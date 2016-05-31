@@ -1,13 +1,14 @@
 package psksvp
 
-import psksvp.Verica.Z3.{Exists, QE, SuchThat}
-
+import psksvp.Verica.Z3.{Exists, QE, SuchThat, Validity}
+import com.typesafe.scalalogging._
 /**
   * Created by psksvp on 11/04/2016.
   */
-package object Verica
+package object Verica extends LazyLogging
 {
   import psksvp.Verica.Lang._
+
 
   type Predicate = Expression
   type Formular  = Expression
@@ -173,12 +174,13 @@ package object Verica
     case While(_, r, _, _)     => r
     case Sequence(s1)          => awp(s1, q)
     case Sequence(s1, rest@_*) => awp(s1, awp(Sequence(rest:_*), q))
-    //case _                     => True()
+    case _                     => True()
   }
 
   /**
     * "Background reading on Hoare Logic by Mike Gordon"
     * "page 73"
+    *
     * @param stmt
     * @param q
     * @return
@@ -211,6 +213,27 @@ package object Verica
     case _          => sys.error(s"function ${function.name} has no postcondition")
   }
 
+  def verify(function:Function, postCond:Expression):Expression =
+  {
+    var result:Expression = True()
+    for(vc <- wvc(function.body, postCond))
+    {
+      val checkResult = Validity.check(vc)
+      logger.debug(s"validity check of $vc is $checkResult")
+      result = and(result, checkResult)
+    }
+    result
+  }
 
-  def verify(module:Module):Boolean=true
+  def flatten(aSeq:Sequence):Sequence=
+  {
+    def doFlatten(b: Sequence): List[Statement] = b match
+    {
+      case Sequence()                     => Nil
+      case Sequence(a: Sequence, rest@_*) => doFlatten(a) ::: doFlatten(Sequence(rest: _*))
+      case Sequence(a, rest@_*)           => a :: doFlatten(Sequence(rest: _*))
+    }
+
+    Sequence(doFlatten(aSeq):_*)
+  }
 }

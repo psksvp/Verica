@@ -134,7 +134,7 @@ package object PredicateAbstractionForSoftwareVerification
     case Sequence(a)               => traverse(c, a)
     case Sequence(a, rest@_*)      => val aP = traverse(c, a)
                                       val bP = traverse(Sequence(c, aP), Sequence(rest: _*))
-                                      Sequence(aP, bP)
+                                      flatten(Sequence(aP, bP))
     case While(p, i, e, _)         => val (j, b) = infer(c, s)
                                       While(p, and(i, j), e, b)
   }

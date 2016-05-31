@@ -116,6 +116,7 @@ case class InvokeStatement(moduleName:String,
 case class Sequence(stmts:Statement*) extends Statement(stmts.toList)
 {
   def count=stmts.size
+
 }
 case class Choice(stmtA:Statement, stmtB:Statement) extends Statement(List(stmtA, stmtB))
 
