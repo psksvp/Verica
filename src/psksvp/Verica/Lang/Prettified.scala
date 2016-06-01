@@ -23,6 +23,7 @@ object Prettified
     case Length(v)                        => v + ".length"
     case Literal(l)                       => l
     case i:TypeClass                      => i.toString
+    case UniversalQuantifier(v, e)        => s"forAll(${pretty(v.toList)}, ${apply(e)})"
     case v:VerificationStatment           => s"${v.name}(${apply(v.expression)})"
     case VariableDeclaration(n, t)        => s"local $n:${apply(t)}"
     case InvokeExpression(m, f, args)     => s"$m.$f(" + pretty(args) + ")"

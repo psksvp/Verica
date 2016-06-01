@@ -117,7 +117,7 @@ object Test
     val f1: Function =
       """
         |  function sumArray(a:Array<Integer>):Integer
-        |  [assume(a.length >= 0), ensure(r >= 0)]
+        |  [assume(a.length >= 0), assume(forAll(j, a[j] >= 0)), ensure(r >= 0)]
         |  {
         |    local i:Integer
         |    local r:Integer
@@ -128,7 +128,7 @@ object Test
         |      r := r + a[i]
         |      i := i + 1
         |    }
-        |
+        |    return(r)
         |  }
       """.stripMargin
 
@@ -140,6 +140,9 @@ object Test
                       f1.verificationStatments)
     println(f2)
     println(verify(f2))
+
+    //val a = assumptionOf(f1)
+    //println(Z3.makeAssumptions("sOlver", a))
   }
 
   def testPythonize: Unit=

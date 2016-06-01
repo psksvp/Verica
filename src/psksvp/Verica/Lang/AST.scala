@@ -110,6 +110,13 @@ case class Assert(expr:Expression) extends VerificationStatment("assert", expr)
 case class Assume(expr:Expression) extends VerificationStatment("assume", expr)
 case class Ensure(expr:Expression) extends VerificationStatment("ensure", expr)
 
+// universal & existential  Quantifier
+abstract class Quantifier(vars:List[Variable], expr:Expression) extends Expression(vars ::: List(expr))
+case class UniversalQuantifier(variables:List[Variable],
+                               expression: Expression) extends Quantifier(variables, expression)
+case class ExistentialQuantifier(variables:List[Variable],
+                                 expression: Expression) extends Quantifier(variables, expression)
+
 case class InvokeStatement(moduleName:String,
                            functionName:String,
                            parameters:List[Expression]) extends Statement(parameters)

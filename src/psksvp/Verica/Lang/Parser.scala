@@ -56,7 +56,7 @@ object Parser extends JavaTokenParsers with PackratParsers
   lazy val expressionList = repsep(expression, ",")
 
   lazy val factor = "(" ~> expression <~ ")" |num|trueLiteral|falseLiteral|notExpr|notFunc|andFunc|orFunc|
-                                              arrayVariable|variableLength|invokeExp|z3pyLengthOfArray|variable
+                                              arrayVariable|variableLength|invokeExp|z3pyLengthOfArray|forAll|variable
 
   lazy val num = floatingPointNumber                    ^^ {t => IntegerValue(t.toInt) }
   lazy val trueLiteral = "true"                         ^^ {t => True()}
@@ -84,6 +84,10 @@ object Parser extends JavaTokenParsers with PackratParsers
   lazy val logicOP = """/\""" | """\/""" | "->" ^^ {t => t}
 
 
+  lazy val forAll:PackratParser[UniversalQuantifier] = "forAll" ~> ("(" ~> repsep(variable, " ")) ~ ("," ~> expression <~ ")") ^^
+  {
+    case v ~ expr => UniversalQuantifier(v, expr)
+  }
   ///////////////////////////////
   // predicates and Invariant
   lazy val predicates:PackratParser[Predicates] = (("(" ~> expression <~ ")") *) ^^

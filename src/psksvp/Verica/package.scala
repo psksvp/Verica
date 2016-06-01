@@ -209,35 +209,36 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
 
     lookForEnsure(function.verificationStatments)
   }
-  /*
-  def postConditionOf(ls:List[Statement]):List[Expression] = ls match
+
+  def assumptionOf(function:Function):List[Expression] =
   {
-    case Nil       => Nil
-    case h :: rest => h match
-                      {
-                        case Ensure(e) => e :: postConditionOf(rest)
-                        case _         => postConditionOf(rest)
-                      }
+    def lookForAssume(ls:List[VerificationStatment]):List[Expression] = ls match
+    {
+      case Nil       => Nil
+      case h :: rest => h match
+      {
+        case Assume(e)    => e :: lookForAssume(rest)
+        case _            => lookForAssume(rest)
+      }
+    }
+
+    lookForAssume(function.verificationStatments)
   }
 
-  def postConditionOf(function:Function):Expression = function.body match
-  {
-    case s:Sequence => and(postConditionOf(s.stmts.toList))
-    case Ensure(e)  => e
-    case _          => sys.error(s"function ${function.name} has no postcondition")
-  } */
 
   def verify(function:Function):Expression =
   {
     val listOfpostCond = postConditionOf(function)
     if(Nil != listOfpostCond)
     {
+      val listOfAssumption = assumptionOf(function)
+
       logger.trace(s"goint to verify function ${function.name} with post conds $listOfpostCond")
       var result:Expression = True()
       for(vc <- wvc(function.body, and(listOfpostCond)))
       {
-        val checkResult = Validity.check(vc)
-        logger.trace(s"validity check of $vc is $checkResult")
+        val checkResult = Validity.check(vc, listOfAssumption)
+        logger.debug(s"validity check of $vc is $checkResult")
         result = and(result, checkResult)
       }
       result

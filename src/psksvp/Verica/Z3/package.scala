@@ -9,21 +9,23 @@ package object Z3
 
   /**
     * Verica language to python string
+    *
     * @param expr
     * @return
     */
   def pythonize(expr:Expression):String=expr match
   {
-    case Binary(Or(), l, r)     => "Or(" + pythonize(l) + "," + pythonize(r) + ")"
-    case Binary(And(), l, r)    => "And(" + pythonize(l) + "," + pythonize(r) + ")"
-    case Binary(Equal(), l, r)  =>  pythonize(l) + "==" + pythonize(r)
-    case Binary(Implies(), l, r)=> "Implies(" + pythonize(l) + "," + pythonize(r) + ")"
-    case Binary(op, l, r)       => pythonize(l) + op.symbol + pythonize(r)
-    case Unary(Negation(), l)   => "Not(" + pythonize(l) + ")"
-    case Length(v)              => s"lengthOf_${v.name}"
-    case True()                 => "True"
-    case False()                => "False"
-    case _                      => expr.toString
+    case Binary(Or(), l, r)       => "Or(" + pythonize(l) + "," + pythonize(r) + ")"
+    case Binary(And(), l, r)      => "And(" + pythonize(l) + "," + pythonize(r) + ")"
+    case Binary(Equal(), l, r)    =>  pythonize(l) + "==" + pythonize(r)
+    case Binary(Implies(), l, r)  => "Implies(" + pythonize(l) + "," + pythonize(r) + ")"
+    case Binary(op, l, r)         => pythonize(l) + op.symbol + pythonize(r)
+    case Unary(Negation(), l)     => "Not(" + pythonize(l) + ")"
+    case Length(v)                => s"lengthOf_${v.name}"
+    case UniversalQuantifier(v, e)=> s"ForAll(${Prettified.pretty(v.toList)}, ${pythonize(e)})"
+    case True()                   => "True"
+    case False()                  => "False"
+    case _                        => expr.toString
   }
 
 
@@ -61,4 +63,23 @@ package object Z3
 
     result.trim
   }
+
+  def makeAssumptions(modelName:String, ls:List[Expression]):String = ls match
+  {
+    case Nil => ""
+    case h :: rest => makeAssumption(modelName, h) + makeAssumptions(modelName, rest)
+  }
+
+  def makeAssumption(modelName:String, expr:Expression):String =
+  {
+    expr match
+    {
+      case UniversalQuantifier(v, e) => makeIntVariables(v) + "\n" +
+                                        makeIntVariables(e) + "\n" +
+                                        s"$modelName.add(${pythonize(expr)})\n"
+      case _                         => s"$modelName.add(${pythonize(expr)})\n"
+    }
+
+  }
+
 }
