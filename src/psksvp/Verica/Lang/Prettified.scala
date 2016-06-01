@@ -25,7 +25,7 @@ object Prettified
     case i:TypeClass                      => i.toString
     case UniversalQuantifier(v, e)        => s"forAll(${pretty(v.toList)}, ${apply(e)})"
     case v:VerificationStatment           => s"${v.name}(${apply(v.expression)})"
-    case VariableDeclaration(n, t)        => s"local $n:${apply(t)}"
+    case VariableDeclaration(name, t)     => s"local $name:${apply(t)}"
     case InvokeExpression(m, f, args)     => s"$m.$f(" + pretty(args) + ")"
     case InvokeStatement(m, f, args)      => s"$m.$f(" + pretty(args) + ")"
     case Return(e)                        => s"return(${apply(e)})"
@@ -36,8 +36,8 @@ object Prettified
     case s:Sequence                       => pretty(s)
     case p:Predicates                     => pretty(p)
     case While(p, i, e, s)                => s"while(${apply(e)}, [${apply(p)}, ${apply(i)}])\n${apply(s)}"
-    case Parameter(n, t)                  => s"$n:$t"
-    case Function(n, args, tpe, body, vl) => s"function $n(${pretty(args)}):${apply(tpe)}\n[${pretty(vl)}]\n${apply(body)}"
+    case Parameter(name, t)               => s"$name:$t"
+    case Function(f, args, tpe, body, vl) => s"function $f(${pretty(args)}):${apply(tpe)}\n[${pretty(vl)}]\n${apply(body)}"
     case a:If                             => pretty(a)
     case Module(name, f)                  => val h = s"Module($name)\n{\n"
                                              indent()
