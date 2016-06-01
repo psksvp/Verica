@@ -128,7 +128,6 @@ object Test
         |      r := r + a[i]
         |      i := i + 1
         |    }
-        |    return(r)
         |  }
       """.stripMargin
 
