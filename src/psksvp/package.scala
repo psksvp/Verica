@@ -89,12 +89,5 @@ package object psksvp
     result
   }
 
-  // taken from
-  // http://blog.thedigitalcatonline.com/blog/2015/04/07/99-scala-problems-07-flatten/#.V00oQ1cRqgQ
-  def flatten(l: List[Any]): List[Any] = l flatMap
-  {
-    case ls: List[_] => flatten(ls)
-    case h => List(h)
-  }
 }
 

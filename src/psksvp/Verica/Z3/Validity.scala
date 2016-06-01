@@ -1,11 +1,10 @@
 package psksvp.Verica.Z3
 
-import psksvp.Verica._
 
 /**
   * Created by psksvp on 10/05/2016.
   */
-object Validity
+object Validity extends com.typesafe.scalalogging.LazyLogging
 {
   case class Valid()
   case class Invalid()
@@ -24,6 +23,8 @@ object Validity
         |sOlVer.add(Not($pyExpr))
         |print(sOlVer.check())
       """.stripMargin.trim
+    logger.trace(s"Validity.check($expr)")
+    logger.trace(code)
     if("unsat" == psksvp.evalPython(code))
       True()
     else

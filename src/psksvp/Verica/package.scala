@@ -1,11 +1,10 @@
 package psksvp
 
 import psksvp.Verica.Z3.{Exists, QE, SuchThat, Validity}
-import com.typesafe.scalalogging._
 /**
   * Created by psksvp on 11/04/2016.
   */
-package object Verica extends LazyLogging
+package object Verica extends com.typesafe.scalalogging.LazyLogging
 {
   import psksvp.Verica.Lang._
 
@@ -196,6 +195,21 @@ package object Verica extends LazyLogging
     case _                     => Set()
   }
 
+  def postConditionOf(function:Function):List[Expression] =
+  {
+    def lookForEnsure(ls:List[VerificationStatment]):List[Expression] = ls match
+    {
+      case Nil       => Nil
+      case h :: rest => h match
+                        {
+                          case Ensure(e) => e :: lookForEnsure(rest)
+                          case _         => lookForEnsure(rest)
+                        }
+    }
+
+    lookForEnsure(function.verificationStatments)
+  }
+  /*
   def postConditionOf(ls:List[Statement]):List[Expression] = ls match
   {
     case Nil       => Nil
@@ -211,18 +225,28 @@ package object Verica extends LazyLogging
     case s:Sequence => and(postConditionOf(s.stmts.toList))
     case Ensure(e)  => e
     case _          => sys.error(s"function ${function.name} has no postcondition")
-  }
+  } */
 
-  def verify(function:Function, postCond:Expression):Expression =
+  def verify(function:Function):Expression =
   {
-    var result:Expression = True()
-    for(vc <- wvc(function.body, postCond))
+    val listOfpostCond = postConditionOf(function)
+    if(Nil != listOfpostCond)
     {
-      val checkResult = Validity.check(vc)
-      logger.debug(s"validity check of $vc is $checkResult")
-      result = and(result, checkResult)
+      logger.trace(s"goint to verify function ${function.name} with post conds $listOfpostCond")
+      var result:Expression = True()
+      for(vc <- wvc(function.body, and(listOfpostCond)))
+      {
+        val checkResult = Validity.check(vc)
+        logger.trace(s"validity check of $vc is $checkResult")
+        result = and(result, checkResult)
+      }
+      result
     }
-    result
+    else
+    {
+      logger.debug(s"at verify, function ${function.name} has no post conditions")
+      False()
+    }
   }
 
   def flatten(aSeq:Sequence):Sequence=

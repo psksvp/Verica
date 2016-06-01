@@ -86,7 +86,8 @@ case class Parameter(name:String, typeClass:TypeClass) extends Node(Nil)
 case class Function(name:String,
                     parameters:List[Parameter],
                     typeClass:TypeClass,
-                    body:Statement) extends Node(Nil)
+                    body:Statement,
+                    verificationStatments:List[VerificationStatment] = Nil) extends Node(Nil)
 ////////////////////////////////////////////////////////////////////////
 case class Predicates(exprs:Expression*) extends Node(exprs.toList)
 {
@@ -116,7 +117,7 @@ case class InvokeStatement(moduleName:String,
 case class Sequence(stmts:Statement*) extends Statement(stmts.toList)
 {
   def count=stmts.size
-
+  def flatten:Sequence=psksvp.Verica.flatten(this)
 }
 case class Choice(stmtA:Statement, stmtB:Statement) extends Statement(List(stmtA, stmtB))
 

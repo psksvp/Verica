@@ -36,7 +36,7 @@ object Prettified
     case p:Predicates                     => pretty(p)
     case While(p, i, e, s)                => s"while(${apply(e)}, [${apply(p)}, ${apply(i)}])\n${apply(s)}"
     case Parameter(n, t)                  => s"$n:$t"
-    case Function(n, args, tpe, body)     => s"function $n(${pretty(args)}):${apply(tpe)}\n${apply(body)}"
+    case Function(n, args, tpe, body, vl) => s"function $n(${pretty(args)}):${apply(tpe)}\n[${pretty(vl)}]\n${apply(body)}"
     case a:If                             => pretty(a)
     case Module(name, f)                  => val h = s"Module($name)\n{\n"
                                              indent()

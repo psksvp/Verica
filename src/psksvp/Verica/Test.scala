@@ -117,6 +117,7 @@ object Test
     val f1: Function =
       """
         |  function sumArray(a:Array<Integer>):Integer
+        |  [assume(a.length >= 0), ensure(r >= 0)]
         |  {
         |    local i:Integer
         |    local r:Integer
@@ -132,9 +133,13 @@ object Test
       """.stripMargin
 
     println(f1)
-    val f2 = Function(f1.name, f1.parameters, f1.typeClass, traverse(Empty(), f1.body))
+    val f2 = Function(f1.name,
+                      f1.parameters,
+                      f1.typeClass,
+                      traverse(Empty(), f1.body),
+                      f1.verificationStatments)
     println(f2)
-    println(verify(f2, "r >= 0"))
+    println(verify(f2))
   }
 
   def testPythonize: Unit=

@@ -123,11 +123,20 @@ object Parser extends JavaTokenParsers with PackratParsers
     case id ~ tpe => Parameter(id, tpe)
   }
 
+  lazy val verificationStmt = assume|ensure
+  lazy val verificationStmtList:Parser[List[VerificationStatment]] =
+    "[" ~> repsep(verificationStmt, ",") <~ "]" ^^ {t => t}
+
   lazy val arguments:Parser[List[Parameter]] = repsep(parameter, ",")
   lazy val function:PackratParser[Function] =
-    "function" ~ identifier ~ "(" ~ arguments ~ ")" ~ ":" ~ typeClass ~ sequence ^^
+    "function" ~ identifier ~ "(" ~ arguments ~ ")" ~ ":" ~ typeClass ~ (verificationStmtList ?) ~ sequence ^^
   {
-    case f ~ name ~ op ~ args ~ cp ~ cl ~ tpe ~ body => Function(name, args, tpe, body)
+    case f ~ name ~ op ~ args ~ cp ~ cl ~ tpe ~ vs ~ body =>
+      vs match
+      {
+        case Some(l) => Function(name, args, tpe, body, l)
+        case None    => Function(name, args, tpe, body)
+      }
   }
 
   /////////////////////////////
