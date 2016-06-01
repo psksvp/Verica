@@ -15,13 +15,12 @@ object Validity extends com.typesafe.scalalogging.LazyLogging
   {
     val pyExpr = pythonize(expr)
     val vars = makeIntVariables(expr)
-    val assumptionCode = makeAssumptions("sOlVer", assumptions)
     val code =
       s"""
         |from z3 import *
         |$vars
         |sOlVer = Solver()
-        |$assumptionCode
+        |${makeAssumptions("sOlVer", assumptions)}
         |sOlVer.add(Not($pyExpr))
         |print(sOlVer.check())
       """.stripMargin.trim

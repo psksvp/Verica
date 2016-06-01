@@ -10,7 +10,7 @@ object Satisfiable
 
   import psksvp.Verica.Lang._
 
-  def check(expr:Expression):Expression =
+  def check(expr:Expression, assumptions:List[Expression] = Nil):Expression =
   {
     val pyExpr = pythonize(expr)
     val vars = makeIntVariables(expr)
@@ -19,6 +19,7 @@ object Satisfiable
          |from z3 import *
          |$vars
          |sOlVer = Solver()
+         |${makeAssumptions("sOlVer", assumptions)}
          |sOlVer.add($pyExpr))
          |print(sOlVer.check())
       """.stripMargin.trim

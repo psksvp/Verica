@@ -6,6 +6,11 @@ Currently there is an implementation of the paper "Predication abstraction for s
 
 If you are going to clone this repo, please read below.
 
+## Requirements
+1) SBT Scala build tool.
+
+2) Z3 (https://github.com/Z3Prover/z3) python module. On OSX, one can do "brew install z3" 
+
 ## Disclaimer
 1) The code has **not** been extensively tested. Please do not use this code in any production environment.
 
