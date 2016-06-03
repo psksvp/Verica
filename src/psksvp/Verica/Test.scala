@@ -18,8 +18,8 @@ object Test
       |module(HelloWorld)
       |{
       |  function sum(n:Integer):Integer
+      |  [assume(n > 0)]
       |  {
-      |    assume(n > 0)
       |    local i:Integer
       |    local s:Integer
       |    i := 1
@@ -33,6 +33,9 @@ object Test
       |  }
       |
       |  function sumArray(a:Array<Integer>):Integer
+      |  [assume(a.length >= 0),
+      |   assume(forAll(j, a[j] >= 0)),
+      |   ensure(r >= 0)]
       |  {
       |    local i:Integer
       |    local s:Integer
@@ -44,7 +47,6 @@ object Test
       |      i := i + 1
       |    }
       |    return(s)
-      |    ensure(s >= 0)
       |  }
       |
       |  function testing(a:Array<Integer>):Integer
@@ -117,7 +119,9 @@ object Test
     val f1: Function =
       """
         |  function sumArray(a:Array<Integer>):Integer
-        |  [assume(a.length >= 0), assume(forAll(j, a[j] >= 0)), ensure(r >= 0)]
+        |  [assume(a.length >= 0),
+        |   assume(forAll(j, a[j] >= 0)),
+        |   ensure(r >= 0)]
         |  {
         |    local i:Integer
         |    local r:Integer
@@ -130,6 +134,8 @@ object Test
         |    }
         |  }
       """.stripMargin
+
+
 
     println(f1)
     val f2 = Function(f1.name,
@@ -144,6 +150,32 @@ object Test
     //println(Z3.makeAssumptions("sOlver", a))
   }
 
+  def testVerifyFindMax:Unit=
+  {
+    val maxFunc:Function =
+      """
+        |function max(a:Array<Integer>):Integer
+        |[assume(a.length >= 1),
+        | ensure(forAll(j, (j >= 0 /\ j <= a.length) -> (a[j] <= result) ))]
+        |{
+        |   local i:Integer
+        |   local result:Integer
+        |   i := 1
+        |   r := a[0]
+        |   while(i < a.length, [(true), forAll(j, (j >= 0 /\ j <= i) -> (a[j] <= result))])
+        |   {
+        |     if(a[i] > result)
+        |     {
+        |       result := a[i]
+        |     }
+        |   }
+        |}
+      """.stripMargin
+
+    println(maxFunc)
+    println(verify(maxFunc))
+  }
+
   def testPythonize: Unit=
   {
     val mm:Expression = """(a < b.length) /\ (i > 0)"""
@@ -154,6 +186,6 @@ object Test
 
   def main(args:Array[String]):Unit=
   {
-    testInferWithArray
+    testVerifyFindMax
   }
 }

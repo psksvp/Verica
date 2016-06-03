@@ -39,6 +39,7 @@ object Prettified
     case Parameter(name, t)               => s"$name:$t"
     case Function(f, args, tpe, body, vl) => s"function $f(${pretty(args)}):${apply(tpe)}\n[${pretty(vl)}]\n${apply(body)}"
     case a:If                             => pretty(a)
+    case Empty()                          => ""
     case Module(name, f)                  => val h = s"Module($name)\n{\n"
                                              indent()
                                              val i = indentString + s"${pretty(f, "  ")}"
@@ -57,14 +58,13 @@ object Prettified
   def pretty(iF:If): String =
   {
     var out = "if(" + apply(iF.e) + ")\n"
-    indent()
     out = out + apply(iF.stmtA)
-    out = out + indentString + "\n"
-    outdent()
-    out = out + "\nelse\n"
-    indent()
-    out = out + apply(iF.stmtB)
-    outdent()
+    if(iF.stmtB != Empty())
+    {
+      out = out + "\n" + indentString + "else\n"
+      out = out + apply(iF.stmtB)
+    }
+
     out
   }
 

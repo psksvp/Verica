@@ -26,11 +26,12 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
 
   def listOfVariablesIn(expression: Expression):List[Variable] = expression match
   {
-    case v:Variable       => List(v)
-    case Binary(op, l, r) => listOfVariablesIn(l) ::: listOfVariablesIn(r)
-    case Unary(op, e)     => listOfVariablesIn(e)
-    case Length(v)        => List(Variable(s"lengthOf_${v.name}"))
-    case _                => Nil
+    case v:Variable                 => List(v)
+    case Binary(op, l, r)           => listOfVariablesIn(l) ::: listOfVariablesIn(r)
+    case Unary(op, e)               => listOfVariablesIn(e)
+    case Length(v)                  => List(Variable(s"lengthOf_${v.name}"))
+    case UniversalQuantifier(vl, e) => vl ::: listOfVariablesIn(e)
+    case _                          => Nil
   }
 
 
@@ -148,7 +149,9 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
                       assignment.variable.kind)
     val eq = equal(assignment.variable, substituteVariable(assignment.variable, assignment.expr, vP))
     QE.solve(Exists(vP :: Nil),
-             SuchThat(and(eq, substituteVariable(assignment.variable, inPredicate = q, withExp = vP))))
+             SuchThat(and(eq, substituteVariable(assignment.variable,
+                                                  inPredicate = q,
+                                                  withExp = vP))))
   }
 
   def strongestPostCondition(stmt:Statement, q:Predicate):Formular =
