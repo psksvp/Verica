@@ -26,12 +26,13 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
 
   def listOfVariablesIn(expression: Expression):List[Variable] = expression match
   {
-    case v:Variable                 => List(v)
-    case Binary(op, l, r)           => listOfVariablesIn(l) ::: listOfVariablesIn(r)
-    case Unary(op, e)               => listOfVariablesIn(e)
-    case Length(v)                  => List(Variable(s"lengthOf_${v.name}"))
-    case UniversalQuantifier(vl, e) => vl ::: listOfVariablesIn(e)
-    case _                          => Nil
+    case v:Variable                   => List(v)
+    case Binary(op, l, r)             => listOfVariablesIn(l) ::: listOfVariablesIn(r)
+    case Unary(op, e)                 => listOfVariablesIn(e)
+    case Length(v)                    => List(Variable(s"lengthOf_${v.name}"))
+    case UniversalQuantifier(vl, e)   => vl ::: listOfVariablesIn(e)
+    case ExistentialQuantifier(vl, e) => vl ::: listOfVariablesIn(e)
+    case _                            => Nil
   }
 
 
