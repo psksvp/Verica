@@ -107,6 +107,17 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
 
   /**
     *
+    * @param f
+    * @return
+    */
+  def traverse(f:Function):Function=
+  {
+    val s = traverse(Empty(), f.body)
+    Function(f.name, f.parameters, f.typeClass, s, f.verificationStatments)
+  }
+
+  /**
+    *
     * @param s
     * @return
     */

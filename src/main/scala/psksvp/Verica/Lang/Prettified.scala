@@ -52,8 +52,9 @@ object Prettified
   {
     case Nil       => ""
     case e :: Nil  => apply(e)
-    case e :: rest => apply(e) + separator + pretty[T](rest)
+    case e :: rest => apply(e) + separator + pretty[T](rest, separator)
   }
+
 
   def pretty(iF:If): String =
   {
@@ -70,25 +71,16 @@ object Prettified
 
   def pretty(seq:Sequence): String =
   {
-    var out =  indentString + "{\n"
+    val openCurly = indentString + "{\n"
     indent()
-    for(s <- seq.stmts)
-    {
-      out = out.concat(s"${apply(s)}\n")
-    }
+    val body = pretty(seq.stmts.toList, "\n")
     outdent()
-    out.concat(indentString + "}\n")
+    val closeCurly = "\n" + indentString + "}\n"
+
+    s"$openCurly$body$closeCurly"
   }
 
-  def pretty(p:Predicates):String=
-  {
-    var s = ""
-    for(e <- p.exprs)
-    {
-      s = s.concat(s"${apply(e)}")
-    }
-    s
-  }
+  def pretty(p:Predicates):String=pretty(p.exprs.toList, "")
 
 
   private val indentSize = 2

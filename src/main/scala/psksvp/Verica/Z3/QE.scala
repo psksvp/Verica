@@ -16,10 +16,12 @@ abstract class Quantifier(vars:Seq[Variable])
       vars(0).name
     else
     {
-      var output = "["
-      for (v <- vars)
-        output = output.concat(v + " ")
-      output.concat("]")
+      def go(ls:List[Variable]):String = ls match
+      {
+        case Nil       => ""
+        case h :: rest => s"$h ${go(rest)}"
+      }
+      "[" + go(allVariables.toList) + "]"
     }
   }
 }

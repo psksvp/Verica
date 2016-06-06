@@ -79,7 +79,7 @@ object Test
     println(wh)
     val afterInfer = wh.function("sum") match
     {
-      case Some(f) => Function(f.name, f.parameters, f.typeClass, traverse(f.body))
+      case Some(f) => traverse(f.body)
       case None => sys.error("function sum does not exist")
     }
 
@@ -138,11 +138,7 @@ object Test
 
 
     println(f1)
-    val f2 = Function(f1.name,
-                      f1.parameters,
-                      f1.typeClass,
-                      traverse(Empty(), f1.body),
-                      f1.verificationStatments)
+    val f2 = traverse(f1)
     println(f2)
     println(verify(f2))
 
@@ -186,6 +182,6 @@ object Test
 
   def main(args:Array[String]):Unit=
   {
-    testVerifyFindMax
+    testInferWithArray
   }
 }

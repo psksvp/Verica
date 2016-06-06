@@ -15,17 +15,18 @@ package object Z3
     */
   def pythonize(expr:Expression):String=expr match
   {
-    case Binary(Or(), l, r)       => "Or(" + pythonize(l) + "," + pythonize(r) + ")"
-    case Binary(And(), l, r)      => "And(" + pythonize(l) + "," + pythonize(r) + ")"
-    case Binary(Equal(), l, r)    =>  pythonize(l) + "==" + pythonize(r)
-    case Binary(Implies(), l, r)  => "Implies(" + pythonize(l) + "," + pythonize(r) + ")"
-    case Binary(op, l, r)         => pythonize(l) + op.symbol + pythonize(r)
-    case Unary(Negation(), l)     => "Not(" + pythonize(l) + ")"
-    case Length(v)                => s"lengthOf_${v.name}"
-    case UniversalQuantifier(v, e)=> s"ForAll(${Prettified.pretty(v.toList)}, ${pythonize(e)})"
-    case True()                   => "True"
-    case False()                  => "False"
-    case _                        => expr.toString
+    case Binary(Or(), l, r)          => "Or(" + pythonize(l) + "," + pythonize(r) + ")"
+    case Binary(And(), l, r)         => "And(" + pythonize(l) + "," + pythonize(r) + ")"
+    case Binary(Equal(), l, r)       =>  pythonize(l) + "==" + pythonize(r)
+    case Binary(Implies(), l, r)     => "Implies(" + pythonize(l) + "," + pythonize(r) + ")"
+    case Binary(op, l, r)            => pythonize(l) + op.symbol + pythonize(r)
+    case Unary(Negation(), l)        => "Not(" + pythonize(l) + ")"
+    case Length(v)                   => s"lengthOf_${v.name}"
+    case ExistentialQuantifier(v, e) => s"Exists(${Prettified.pretty(v.toList)}, ${pythonize(e)})"
+    case UniversalQuantifier(v, e)   => s"ForAll(${Prettified.pretty(v.toList)}, ${pythonize(e)})"
+    case True()                      => "True"
+    case False()                     => "False"
+    case _                           => expr.toString
   }
 
 
