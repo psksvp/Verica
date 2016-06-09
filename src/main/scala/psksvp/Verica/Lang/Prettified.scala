@@ -59,11 +59,11 @@ object Prettified
   def pretty(iF:If): String =
   {
     var out = "if(" + apply(iF.e) + ")\n"
-    out = out + apply(iF.stmtA)
-    if(iF.stmtB != Empty())
+    out = out + apply(iF.bodyA)
+    if(iF.bodyB != Empty())
     {
       out = out + "\n" + indentString + "else\n"
-      out = out + apply(iF.stmtB)
+      out = out + apply(iF.bodyB)
     }
 
     out

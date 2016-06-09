@@ -76,6 +76,14 @@ package object psksvp
     result
   }
 
+  import scala.reflect.ClassTag
+  def removeElement[T:ClassTag, E <: T:ClassTag](ls:List[T]):List[T] = ls match
+  {
+    case Nil            => Nil
+    case (_:E) :: rest  => removeElement[T, E](rest)
+    case a :: rest      => a :: removeElement[T, E](rest)
+  }
+
   def booleanVector(i:Int, bits:Int): Vector[Boolean] =
   {
     require(i <= Integer.parseInt("1"*bits, 2), "psksvp.booleanArray(i, bits) bits is too small for i ")

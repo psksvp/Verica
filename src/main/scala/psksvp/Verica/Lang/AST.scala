@@ -93,6 +93,7 @@ case class Predicates(exprs:Expression*) extends Node(exprs.toList)
 {
   def count = exprs.size
   def apply(index:Int) = exprs(index)
+  def toSet:Set[Expression] = exprs.toSet[Expression]
 }
 
 case class PredicatesAndInvariant(predicates: Predicates,
@@ -131,16 +132,16 @@ case class Choice(stmtA:Statement, stmtB:Statement) extends Statement(List(stmtA
 case class While(predicates:Predicates,
                  invariant:Expression,
                  expr:Expression,
-                 stmt:Statement) extends Statement(List(expr, stmt))
+                 body:Statement) extends Statement(List(expr, body))
 
 case class If(e:Expression,
-              stmtA:Statement,
-              stmtB:Statement=Empty()) extends Statement(List(e, stmtA, stmtB))
+              bodyA:Statement,
+              bodyB:Statement=Empty()) extends Statement(List(e, bodyA, bodyB))
 {
   def toChoice:Choice=
   {
     import psksvp.Verica._
-    Choice(Sequence(Assume(e), stmtA), Sequence(Assume(not(e)), stmtB))
+    Choice(Sequence(Assume(e), bodyA), Sequence(Assume(not(e)), bodyB))
   }
 }
 

@@ -20,7 +20,7 @@ object Satisfiable
          |$vars
          |sOlVer = Solver()
          |${makeAssumptions("sOlVer", assumptions)}
-         |sOlVer.add($pyExpr))
+         |sOlVer.add($pyExpr)
          |print(sOlVer.check())
       """.stripMargin.trim
     if("unsat" == psksvp.evalPython(code))

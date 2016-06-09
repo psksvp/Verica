@@ -127,7 +127,7 @@ object Test
         |    local r:Integer
         |    i := 0
         |    r := 0
-        |    while(i < a.length, [(r >= 0)(i >= 0)(r < 0)(i < 0), true ])
+        |    while(i < a.length, [, true])
         |    {
         |      r := r + a[i]
         |      i := i + 1
@@ -179,9 +179,20 @@ object Test
     println(Z3.pythonize(mm))
   }
 
+  def testSP:Unit=
+  {
+    val m = strongestPostCondition("x := x + y", """x < 0 /\ y > 0""")
+    println(m)
+    val toCheck = implies("""x < 0 /\ y > 0""", m)
+    println(toCheck)
+    println(Z3.Satisfiable.check(toCheck))
+  }
+
 
   def main(args:Array[String]):Unit=
   {
+    //testSP
     testInferWithArray
+    //testVerifyFindMax
   }
 }

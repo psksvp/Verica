@@ -112,7 +112,16 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
     */
   def traverse(f:Function):Function=
   {
-    val s = traverse(Empty(), f.body)
+    def margeVerificationStatements(ls:List[VerificationStatment], s:Statement):Sequence =
+    {
+      val nls = psksvp.removeElement[VerificationStatment, Ensure](ls)
+      val m = Sequence(Sequence(nls:_*), s)
+      flatten(m)
+    }
+
+    //val nb = margeVerificationStatements(f.verificationStatments, f.body)
+    val nb = f.body
+    val s = traverse(Empty(), nb)
     Function(f.name, f.parameters, f.typeClass, s, f.verificationStatments)
   }
 
@@ -135,7 +144,7 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
     */
   def traverse(c:Statement, s:Statement):Statement = s match
   {
-    case Assignment(_, _)          => s
+    case Assignment(v, e)          => s
     case Assert(_)                 => s
     case Assume(_)                 => s
     case Ensure(_)                 => s
@@ -146,17 +155,45 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
     case Sequence(a, rest@_*)      => val aP = traverse(c, a)
                                       val bP = traverse(Sequence(c, aP), Sequence(rest: _*))
                                       Sequence(aP, bP).flatten
-    case While(p, i, e, _)         => val (j, b) = infer(c, s)
-                                      While(p, and(i, j), e, b)
+    case w@While(_, i, e, bo)      => val prd = generatePredicates(w, c)
+                                      val (j, b) = infer(c, While(prd, i, e, bo))
+                                      While(prd, and(i, j), e, b)
   }
 
-  /*
-  def makePredicates(w:While, c:Statement):List[Predicate]=
-  {
-    val t = targets(w)
-    val n = norm(True(), c)
 
-  }*/
+  def generatePredicates(w:While, c:Statement):Predicates=
+  {
+    def traverseLocalContext(s:Statement):Map[Variable, Expression] = s match
+    {
+      case Sequence(Assignment(v, e), rest@_*) => Map(v -> e) ++ traverseLocalContext(Sequence(rest: _*))
+      case Sequence(_, rest@_*)                => traverseLocalContext(Sequence(rest: _*))
+      case Assignment(v, e)                    => Map(v -> e)
+      case _                                   => Map.empty[Variable, Expression]
+    }
+
+    val cs = c match
+    {
+      case a:Sequence => flatten(a)
+      case _          => c
+    }
+
+    val local = traverseLocalContext(cs)
+    var result:List[Predicate] = Nil//List(w.expr)
+    for(t <- targets(w.body))
+    {
+      val e:List[Expression] = t match
+      {
+        case Variable(_, _, ValueVariable()) if local.isDefinedAt(t) => val tn = s"${Prettified(t)}"
+                                                                        val oldT = local(t).toString
+                                                                        List(s"$tn < $oldT", s"$tn >= $oldT")
+
+        case Variable(_, _, ArrayVariable())                         => List()
+        case _                                                       => List()
+      }
+      result = result ::: e
+    }
+    Predicates(result:_*)
+  }
 
   /**
     *
@@ -187,7 +224,6 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
         else
           keepLooping = false
         iteration = iteration + 1
-        //if(0 == iteration % 5)
         logger.trace(s"infer at iteration $iteration current is $j")
       }while(true == keepLooping)
 

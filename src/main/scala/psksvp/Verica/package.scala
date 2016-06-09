@@ -72,11 +72,11 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
     * substitute variable v in inPredicate with expression withExp
     *
     * @param v
-    * @param inPredicate
+    * @param inExp
     * @param withExp
     * @return an expression
     */
-  def substituteVariable(v:Variable, inPredicate:Predicate, withExp:Expression):Predicate=
+  def substituteVariable(v:Variable, inExp:Expression, withExp:Expression):Expression=
   {
     def substitutionOf(e:Expression):Expression=
     {
@@ -89,11 +89,13 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
       }
     }
 
-    inPredicate match
+    inExp match
     {
-      case Binary(op, l, r) => Binary(op, substitutionOf(l), substitutionOf(r))
-      case Unary(op, e)     => Unary(op, substitutionOf(e))
-      case _                => inPredicate
+      case Binary(op, l, r)             => Binary(op, substitutionOf(l), substitutionOf(r))
+      case Unary(op, e)                 => Unary(op, substitutionOf(e))
+      case UniversalQuantifier(vl, e)   => UniversalQuantifier(vl, substitutionOf(e))
+      case ExistentialQuantifier(vl, e) => ExistentialQuantifier(vl, substitutionOf(e))
+      case _                            => inExp
     }
 
   }
@@ -106,7 +108,7 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
     */
   def weakestPrecondition(stmt:Statement, q:Predicate):Predicate = stmt match
   {
-    case Assignment(v, e)          => substituteVariable(v, inPredicate = q, withExp = e)
+    case Assignment(v, e)          => substituteVariable(v, inExp = q, withExp = e)
     case If(t, a, b)               => or(and(t, weakestPrecondition(a, q)),
                                          and(not(t), weakestPrecondition(b, q)))
     case Sequence(s1)              => weakestPrecondition(s1, q)
@@ -130,11 +132,15 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
     */
   def vc(p:Expression, stm:Statement, q:Expression):Expression=stm match
   {
-    case Assignment(v, e) => implies(p, substituteVariable(v, inPredicate = q, withExp = e))
+    case Assignment(v, e) => implies(p, substituteVariable(v, inExp = q, withExp = e))
     case If(s, c1, c2)    => and(vc(and(p, s), c1, q), vc(and(p, not(s)), c2,  q))
     case Sequence(s)      => vc(p, s, q)
     case s:Sequence       => implies(p, and(vc(p, Sequence(s.stmts.take(s.count - 1):_*), q),
                                             vc(p, s.stmts.last, q)))
+
+    case While(_, i, e, s)=> and(implies(p, i),
+                                 implies(and(i, not(e)), q),
+                                 vc(and(i, e), s, i))
   }
 
   /**
@@ -145,14 +151,13 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
     */
   def strongestPostCondition(assignment: Assignment, q:Predicate):Expression=
   {
-    val vP = Variable(assignment.variable.name + "P",
-                      assignment.variable.index,
-                      assignment.variable.kind)
-    val eq = equal(assignment.variable, substituteVariable(assignment.variable, assignment.expr, vP))
-    QE.solve(Exists(vP :: Nil),
-             SuchThat(and(eq, substituteVariable(assignment.variable,
-                                                  inPredicate = q,
-                                                  withExp = vP))))
+    assignment match
+    {
+      case Assignment(v, e)            =>
+        val vP = Variable(v.name + "P", v.index, v.kind)
+        val eq = equal(v, substituteVariable(v, inExp = e, withExp = vP))
+        QE.solve(Exists(vP :: Nil), SuchThat(and(eq, substituteVariable(v, inExp = q, withExp = vP))))
+    }
   }
 
   def strongestPostCondition(stmt:Statement, q:Predicate):Formular =
@@ -170,13 +175,15 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
     */
   def awp(stmt:Statement, q:Formular):Formular = stmt match
   {
-    case Assignment(v, e)      => substituteVariable(v, inPredicate = q, withExp = e)
+    case Assignment(v, e)      => substituteVariable(v, inExp = q, withExp = e)
     case If(s, c1, c2)         => val c1Path = and(s, awp(c1, q))
                                   val c2Path = and(not(s), awp(c2, q))
                                   or(c1Path, c2Path)
     case While(_, r, _, _)     => r
     case Sequence(s1)          => awp(s1, q)
     case Sequence(s1, rest@_*) => awp(s1, awp(Sequence(rest:_*), q))
+    case Assert(e)             => and(e, q)
+    case Assume(e)             => implies(e, q)
     case _                     => True()
   }
 
@@ -203,12 +210,9 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
   {
     def lookForEnsure(ls:List[VerificationStatment]):List[Expression] = ls match
     {
-      case Nil       => Nil
-      case h :: rest => h match
-                        {
-                          case Ensure(e) => e :: lookForEnsure(rest)
-                          case _         => lookForEnsure(rest)
-                        }
+      case Nil               => Nil
+      case Ensure(e) :: rest => e :: lookForEnsure(rest)
+      case _ :: rest         => lookForEnsure(rest)
     }
 
     lookForEnsure(function.verificationStatments)
@@ -218,12 +222,9 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
   {
     def lookForAssume(ls:List[VerificationStatment]):List[Expression] = ls match
     {
-      case Nil       => Nil
-      case h :: rest => h match
-      {
-        case Assume(e)    => e :: lookForAssume(rest)
-        case _            => lookForAssume(rest)
-      }
+      case Nil               => Nil
+      case Assume(e) :: rest => e :: lookForAssume(rest)
+      case _ ::rest          => lookForAssume(rest)
     }
 
     lookForAssume(function.verificationStatments)

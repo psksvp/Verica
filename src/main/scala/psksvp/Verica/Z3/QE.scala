@@ -15,14 +15,7 @@ abstract class Quantifier(vars:Seq[Variable])
     if(1 == vars.size)
       vars(0).name
     else
-    {
-      def go(ls:List[Variable]):String = ls match
-      {
-        case Nil       => ""
-        case h :: rest => s"$h ${go(rest)}"
-      }
-      "[" + go(allVariables.toList) + "]"
-    }
+      "[" + Prettified.pretty(allVariables.toList, " ") + "]"
   }
 }
 
