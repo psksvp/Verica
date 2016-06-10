@@ -56,7 +56,8 @@ object Parser extends JavaTokenParsers with PackratParsers
   lazy val expressionList = repsep(expression, ",")
 
   lazy val factor = "(" ~> expression <~ ")" |num|trueLiteral|falseLiteral|notExpr|notFunc|andFunc|orFunc|
-                                              arrayVariable|variableLength|invokeExp|z3pyLengthOfArray|forAll|variable
+                                              arrayVariable|variableLength|invokeExp|z3pyLengthOfArray|
+                                              forAll|exists|z3pySysGenVar|variable
 
   lazy val num = floatingPointNumber                    ^^ {t => IntegerValue(t.toInt) }
   lazy val trueLiteral = "true"                         ^^ {t => True()}
@@ -83,10 +84,19 @@ object Parser extends JavaTokenParsers with PackratParsers
   lazy val relationOP = "==" | "=" | "!=" | "<=" | "<" | ">=" | ">" ^^ {t => t}
   lazy val logicOP = """/\""" | """\/""" | "->" ^^ {t => t}
 
+  lazy val universalQuantifierName = "forAll"|"ForAll"
+  lazy val existentialQuantifierName = "exists"|"Exists"
 
-  lazy val forAll:PackratParser[UniversalQuantifier] = "forAll" ~> ("(" ~> repsep(variable, " ")) ~ ("," ~> expression <~ ")") ^^
+  lazy val forAll:PackratParser[UniversalQuantifier] =
+    universalQuantifierName ~> ("(" ~> repsep(z3pySysGenVar|variable, " ")) ~ ("," ~> expression <~ ")") ^^
   {
     case v ~ expr => UniversalQuantifier(v, expr)
+  }
+
+  lazy val exists:PackratParser[ExistentialQuantifier] =
+    existentialQuantifierName ~> ("(" ~> repsep(z3pySysGenVar|variable, " ")) ~ ("," ~> expression <~ ")") ^^
+  {
+    case v ~ expr => ExistentialQuantifier(v, expr)
   }
   ///////////////////////////////
   // predicates and Invariant
@@ -103,6 +113,10 @@ object Parser extends JavaTokenParsers with PackratParsers
 
   //////////////////////////////////
   /// z3python output
+  lazy val z3pySysGenVar:PackratParser[Variable] = identifier~"!"~integer ^^
+  {
+    case s~"!"~n => Variable(s"$s$n")
+  }
   lazy val z3pyLengthOfArray:PackratParser[Length] = "lengthOf_" ~> identifier ^^
   {
     t => Length(Variable(t, Nil, ArrayVariable()))
@@ -270,6 +284,15 @@ object Parser extends JavaTokenParsers with PackratParsers
     {
       case Success(topNode, _) => topNode
       case f                   => sys.error("expression is not a z3pyListOutput expression")
+    }
+  }
+
+  def parsePyZ3GenVar(src:String):Variable =
+  {
+    parseAll(z3pySysGenVar, src) match
+    {
+      case Success(topNode, _) => topNode
+      case f                   => sys.error("expression is not a z3pySysGenVar expression")
     }
   }
 

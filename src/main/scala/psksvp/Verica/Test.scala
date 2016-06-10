@@ -194,5 +194,8 @@ object Test
     //testSP
     testInferWithArray
     //testVerifyFindMax
+
+    //println(Parser.parsePyZ3GenVar("x ! 2"))
+
   }
 }

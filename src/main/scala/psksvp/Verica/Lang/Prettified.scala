@@ -24,6 +24,7 @@ object Prettified
     case Literal(l)                       => l
     case i:TypeClass                      => i.toString
     case UniversalQuantifier(v, e)        => s"forAll(${pretty(v.toList)}, ${apply(e)})"
+    case ExistentialQuantifier(v, e)      => s"exists(${pretty(v.toList)}, ${apply(e)})"
     case v:VerificationStatment           => s"${v.name}(${apply(v.expression)})"
     case VariableDeclaration(name, t)     => s"local $name:${apply(t)}"
     case InvokeExpression(m, f, args)     => s"$m.$f(" + pretty(args) + ")"
