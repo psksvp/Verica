@@ -84,6 +84,11 @@ package object psksvp
     case a :: rest      => a :: removeElement[T, E](rest)
   }
 
+
+  def overflow(n:Int, bits:Int) = !(n <= Integer.parseInt("1"*bits, 2))
+
+  def maxValue(bits:Int) = Integer.parseInt("1"*bits, 2)
+
   def booleanVector(i:Int, bits:Int): Vector[Boolean] =
   {
     require(i <= Integer.parseInt("1"*bits, 2), "psksvp.booleanArray(i, bits) bits is too small for i ")
@@ -97,5 +102,37 @@ package object psksvp
     result
   }
 
+  def octal(s:String):Int = Integer.parseInt(s, 8)
+
+  var counter = 0
+  def gensym(prefix:String="symbol"):String =
+  {
+    counter = counter + 1
+    s"$prefix$counter"
+  }
+
+
+  val RG = new java.util.Random()
+  def random(n:Int):Int = RG.nextInt(n)
+
+
+  /**
+    * http://stackoverflow.com/questions/5955797/scala-method-to-combine-each-element-of-an-iterable-with-each-element-of-another
+    * code modified from above
+    * @param xx
+    * @return
+    */
+  def crossProduct[T](xx: List[List[T]]): List[List[T]] =
+  {
+    def count[T](xx: List[List[T]]): Int = (1 /: xx) (_ * _.length)
+
+    def combination[T](xx: List[List[T]], i: Int): List[T] = xx match
+    {
+      case Nil => Nil
+      case x :: xs => x(i % x.length) :: combination (xs, i / x.length)
+    }
+
+    (0 until count(xx)).toList.map(i => combination(xx, i))
+  }
 }
 

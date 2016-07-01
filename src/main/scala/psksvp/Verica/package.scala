@@ -8,10 +8,10 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
 {
   import psksvp.Verica.Lang._
 
-
   type Predicate = Expression
   type Formular  = Expression
 
+  implicit def string2Predicates(src:String):Predicates=Parser.parsePredicates(src)
   implicit def string2Statement(src:String):Statement=Parser.parseStatement(src)
   implicit def string2Expression(src:String):Expression=Parser.parseExpression(src)
   implicit def string2Function(src:String):Function=Parser.parseFunction(src)
@@ -83,7 +83,8 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
       e match
       {
         case Variable(name, _, _) if name == v.name => withExp
-        case Binary(op, l, r)                       => Binary(op, substitutionOf(l), substitutionOf(r))
+        case Binary(op, l, r)                       => Binary(op, substitutionOf(l),
+                                                                  substitutionOf(r))
         case Unary(op, exp)                         => Unary(op, substitutionOf(exp))
         case _                                      => e
       }
@@ -91,7 +92,8 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
 
     inExp match
     {
-      case Binary(op, l, r)             => Binary(op, substitutionOf(l), substitutionOf(r))
+      case Binary(op, l, r)             => Binary(op, substitutionOf(l),
+                                                      substitutionOf(r))
       case Unary(op, e)                 => Unary(op, substitutionOf(e))
       case UniversalQuantifier(vl, e)   => UniversalQuantifier(vl, substitutionOf(e))
       case ExistentialQuantifier(vl, e) => ExistentialQuantifier(vl, substitutionOf(e))
@@ -160,11 +162,18 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
     }
   }
 
+  /**
+    *
+    * @param stmt
+    * @param q
+    * @return
+    */
   def strongestPostCondition(stmt:Statement, q:Predicate):Formular =
   {
     import psksvp.Verica.PredicateAbstractionForSoftwareVerification._
     norm(q, stmt)
   }
+
   /**
     * "Background reading on Hoare Logic by Mike Gordon"
     * "page 73"
@@ -206,8 +215,18 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
     case _                     => Set()
   }
 
+  /**
+    *
+    * @param function
+    * @return
+    */
   def postConditionOf(function:Function):List[Expression] =
   {
+    /**
+      *
+      * @param ls
+      * @return
+      */
     def lookForEnsure(ls:List[VerificationStatment]):List[Expression] = ls match
     {
       case Nil               => Nil
@@ -218,6 +237,11 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
     lookForEnsure(function.verificationStatments)
   }
 
+  /**
+    *
+    * @param function
+    * @return
+    */
   def assumptionOf(function:Function):List[Expression] =
   {
     def lookForAssume(ls:List[VerificationStatment]):List[Expression] = ls match
@@ -230,8 +254,12 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
     lookForAssume(function.verificationStatments)
   }
 
-
-  def verify(function:Function):Expression =
+  /**
+    *
+    * @param function
+    * @return
+    */
+  def verify(function:Function):(Expression, Boolean) =
   {
     val listOfpostCond = postConditionOf(function)
     if(Nil != listOfpostCond)
@@ -239,22 +267,29 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
       val listOfAssumption = assumptionOf(function)
 
       logger.trace(s"goint to verify function ${function.name} with post conds $listOfpostCond")
-      var result:Expression = True()
+      var resultExp:Expression = True()
+      var resultVal = true
       for(vc <- wvc(function.body, and(listOfpostCond)))
       {
         val checkResult = Validity.check(vc, listOfAssumption)
         logger.debug(s"validity check of $vc is $checkResult")
-        result = and(result, checkResult)
+        resultExp = and(resultExp, checkResult)
+        resultVal = resultVal && (if(checkResult.isInstanceOf[True]) true else false)
       }
-      result
+      (resultExp, resultVal)
     }
     else
     {
       logger.debug(s"at verify, function ${function.name} has no post conditions")
-      False()
+      (False(), false)
     }
   }
 
+  /**
+    *
+    * @param aSeq
+    * @return
+    */
   def flatten(aSeq:Sequence):Sequence=
   {
     def doFlatten(b: Sequence): List[Statement] = b match

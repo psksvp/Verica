@@ -29,6 +29,11 @@ package object Z3
     case _                           => expr.toString
   }
 
+  def pythonize(stm:Statement):String = stm match
+  {
+    case Assignment(Variable(n, i :: r, ArrayVariable()), e) => s"n = Store(n, ${pythonize(i)}, ${pythonize(e)})"
+  }
+
 
   /**
     *

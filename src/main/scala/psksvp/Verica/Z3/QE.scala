@@ -42,19 +42,24 @@ object QE
   {
     // here I assume that every variable is an Interger (Ints)
     // z3py has Real, Reals, Int, Ints, Bool, Bools
-    val varDecl = Z3.makeIntVariables(suchThat.expression) + ";" + Z3.makeIntVariables(quantifier.allVariables)
+    val varDecl = Z3.makeIntVariables(suchThat.expression) + ";" +
+                  Z3.makeIntVariables(quantifier.allVariables)
     val qfType = quantifier match
     {
       case e:Exists => "Exists(" + e.toString + "," + Z3.pythonize(suchThat.expression) + ")"
       case e:ForAll => "ForAll(" + e.toString + "," + Z3.pythonize(suchThat.expression) + ")"
     }
+
+    val tactic = "sym" + psksvp.gensym()
+    val goal = "sym" + psksvp.gensym()
+
     s"""
       |from z3 import *
       |$varDecl
-      |gOaL3fgrt = Goal()
-      |gOaL3fgrt.add($qfType)
-      |tAcTiC = Tactic('qe')
-      |print(tAcTiC(gOaL3fgrt))
+      |$goal = Goal()
+      |$goal.add($qfType)
+      |$tactic = Tactic('qe')
+      |print($tactic($goal))
     """.stripMargin.trim
   }
 }

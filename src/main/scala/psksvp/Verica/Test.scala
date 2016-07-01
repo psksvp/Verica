@@ -119,7 +119,7 @@ object Test
     val f1: Function =
       """
         |  function sumArray(a:Array<Integer>):Integer
-        |  [assume(a.length >= 0),
+        |  [assume(a.length > 0),
         |   assume(forAll(j, a[j] >= 0)),
         |   ensure(r >= 0)]
         |  {
@@ -127,11 +127,12 @@ object Test
         |    local r:Integer
         |    i := 0
         |    r := 0
-        |    while(i < a.length, [, true])
+        |    while(i < a.length, [(r >= 0)(i >= 0)(i < 0),true])
         |    {
         |      r := r + a[i]
         |      i := i + 1
         |    }
+        |    return(r)
         |  }
       """.stripMargin
 
@@ -188,14 +189,74 @@ object Test
     println(Z3.Satisfiable.check(toCheck))
   }
 
+  def testCrazyLoop:Unit=
+  {
+    val f1: Function =
+      """
+        |  function sumArray(a:Array<Integer>):Integer
+        |  [assume(a.length > 0),
+        |   assume(forAll(j, a[j] >= 0)),
+        |   ensure(r >= 0)]
+        |  {
+        |    local i:Integer
+        |    local r:Integer
+        |    i := 0
+        |    r := 0
+        |    while(i < a.length, [,true])
+        |    {
+        |      r := r + a[i]
+        |    }
+        |    return(r)
+        |  }
+      """.stripMargin
+  }
+
+  def testInferOnTrace: Unit =
+  {
+    val f1: Function =
+      """
+        |  function aTrace(n:Integer):Integer
+        |  [assume(n > 0), ensure(a >= 0)]
+        |  {
+        |    local i:Integer
+        |    local r:Integer
+        |    i := 0
+        |    a := 0
+        |    while(i < n, [(i >= 0)(i < 0)(a == 0),true])
+        |    {
+        |      i := i + 1
+        |    }
+        |  }
+      """.stripMargin
+
+
+
+    println(f1)
+    val f2 = traverse(f1)
+    println(f2)
+    println(verify(f2))
+
+    //val a = assumptionOf(f1)
+    //println(Z3.makeAssumptions("sOlver", a))
+  }
+
 
   def main(args:Array[String]):Unit=
   {
     //testSP
-    testInferWithArray
+    //testInferWithArray
     //testVerifyFindMax
+    testInferOnTrace
 
     //println(Parser.parsePyZ3GenVar("x ! 2"))
 
+    val k = predicateCombinations(List[Variable](Variable("a"), Variable("b"), Variable("c")),
+                           Map[Variable, Expression](Variable("a") -> "0",
+                                                     Variable("b") -> "0",
+                                                      Variable("c") -> "0")  )
+    println(k)
+
+    val m = List(Vector(false, false), Vector(true, false), Vector(true, true))
+    println(abstractDomain2Expression(m))
   }
 }

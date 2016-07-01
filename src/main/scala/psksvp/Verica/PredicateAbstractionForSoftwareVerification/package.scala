@@ -1,5 +1,7 @@
 package psksvp.Verica
 
+import psksvp.Verica.Z3.Validity
+
 /**
   * Created by psksvp on 13/05/2016.
   */
@@ -56,13 +58,10 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
     */
   def havoc(variables:List[Variable]):Statement=
   {
-    def makeAssignmentList(vars:List[Variable]):List[Assignment]=
+    def makeAssignmentList(vars:List[Variable]):List[Assignment]=vars match
     {
-      vars match
-      {
-        case v :: rest => List(Assignment(v, Variable("y"+vars.size))) ::: makeAssignmentList(rest)
-        case _         => Nil
-      }
+      case v :: rest => List(Assignment(v, Variable("y"+vars.size))) ::: makeAssignmentList(rest)
+      case _         => Nil
     }
 
     //http://stackoverflow.com/questions/31064753/how-pass-scala-array-into-scala-vararg-method
@@ -76,12 +75,12 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
     */
   def desugar(w:While):Sequence = w match
   {
-    case While(p, i, e, b) =>
+    case While(_, i, e, b) =>
       Sequence(Assert(i),
-                havoc(targets(b)),
-                Assume(i),
-                Choice(Sequence(Assume(e), b, Assert(i), Assume(False())),
-                        Assume(not(e))))
+               havoc(targets(b)),
+               Assume(i),
+               Choice(Sequence(Assume(e), b, Assert(i), Assume(False())),
+                      Assume(not(e))))
   }
 
   /**
@@ -112,15 +111,25 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
     */
   def traverse(f:Function):Function=
   {
+    def filterForAll(ls:List[VerificationStatment]):List[VerificationStatment] = ls match
+    {
+      case Nil                                       => Nil
+      case Assume(UniversalQuantifier(_, _)) :: rest => filterForAll(rest)
+      case Ensure(_) :: rest                         => filterForAll(rest)
+      case h :: rest                                 => h :: filterForAll(rest)
+    }
+
     def margeVerificationStatements(ls:List[VerificationStatment], s:Statement):Sequence =
     {
-      val nls = psksvp.removeElement[VerificationStatment, Ensure](ls)
+      val nls = filterForAll(ls)//psksvp.removeElement[VerificationStatment, Ensure](ls)
       val m = Sequence(Sequence(nls:_*), s)
       flatten(m)
     }
 
-    //val nb = margeVerificationStatements(f.verificationStatments, f.body)
-    val nb = f.body
+
+
+    val nb = margeVerificationStatements(f.verificationStatments, f.body)
+    //val nb = f.body
     val s = traverse(Empty(), nb)
     Function(f.name, f.parameters, f.typeClass, s, f.verificationStatments)
   }
@@ -150,17 +159,32 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
     case Ensure(_)                 => s
     case Return(_)                 => s
     case VariableDeclaration(_,_)  => s
+    case i:If                      => i.toChoice
     case Choice(a, b)              => Choice(traverse(c, a), traverse(c, b))
     case Sequence(a)               => traverse(c, a)
     case Sequence(a, rest@_*)      => val aP = traverse(c, a)
                                       val bP = traverse(Sequence(c, aP), Sequence(rest: _*))
                                       Sequence(aP, bP).flatten
-    case w@While(_, i, e, bo)      => val prd = generatePredicates(w, c)
-                                      val (j, b) = infer(c, While(prd, i, e, bo))
-                                      While(prd, and(i, j), e, b)
+    case w@While(p, i, e, body)    => if(p.count > 0)
+                                      {
+                                        val (j, b) = infer(c, w)
+                                        While(p, and(i, j), e, b)
+                                      }
+                                      else
+                                      {
+                                        val prd = generatePredicates(w, c)
+                                        val (j, b) = infer(c, While(prd, i, e, body))
+                                        While(prd, and(i, j), e, b)
+                                      }
   }
 
 
+  /**
+    *
+    * @param w
+    * @param c
+    * @return
+    */
   def generatePredicates(w:While, c:Statement):Predicates=
   {
     def traverseLocalContext(s:Statement):Map[Variable, Expression] = s match
@@ -177,29 +201,55 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
       case _          => c
     }
 
-    val local = traverseLocalContext(cs)
-    var result:List[Predicate] = Nil//List(w.expr)
+    val old = traverseLocalContext(cs)
+    var result:List[Predicate] = Nil //List(w.expr)
     for(t <- targets(w.body))
     {
       val e:List[Expression] = t match
       {
-        case Variable(_, _, ValueVariable()) if local.isDefinedAt(t) => val tn = s"${Prettified(t)}"
-                                                                        val oldT = local(t).toString
-                                                                        List(s"$tn < $oldT", s"$tn >= $oldT")
+        case Variable(_, _, ValueVariable()) if old.isDefinedAt(t) => val tn = s"${Prettified(t)}"
+                                                                      List(s"$tn <= ${old(t)}",
+                                                                           s"$tn >= ${old(t)}")
 
-        case Variable(_, _, ArrayVariable())                         => List()
-        case _                                                       => List()
+        case Variable(_, _, ArrayVariable())                       => List()
+        case _                                                     => List()
       }
       result = result ::: e
     }
     Predicates(result:_*)
   }
 
+
+  /*
+  def infer2(c:Statement, w:While):(Expression, Statement)=
+  {
+    def traverseContext(s:Statement):Map[Variable, Expression] = s match
+    {
+      case Sequence(Assignment(v, e), rest@_*) => Map(v -> e) ++ traverseContext(Sequence(rest: _*))
+      case Sequence(_, rest@_*)                => traverseContext(Sequence(rest: _*))
+      case Assignment(v, e)                    => Map(v -> e)
+      case _                                   => Map.empty[Variable, Expression]
+    }
+
+    val cs = c match
+    {
+      case a:Sequence => flatten(a)
+      case _          => c
+    }
+
+    val old = traverseContext(cs)
+    val lsPred = predicateCombinations(targets(w.body), old)
+    for(predComb <- lsPred)
+    {
+
+    }
+  } */
+
   /**
     *
-    * @param c
-    * @param s
-    * @return
+    * @param c context: statements before statement s (while statement)
+    * @param s a while statement
+    * @return turple of inferred invariant and statement s
     */
   def infer(c:Statement, s:Statement):(Expression, Statement)= s match
   {
@@ -215,16 +265,20 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
       do
       {
         j  = gamma(r, p)
+        println("----------")
+        println(r)
+        println(j)
+        println("==========")
         val a  = Assume(and(e, i,  j))
         bp = traverse(Sequence(c, h, a), b)
         val q  = norm(True(), Sequence(c, h, a, bp))
         next = union(r, q, p)
-        if(r != next)
+        if(!next.isEmpty && r != next)
           r = next
         else
           keepLooping = false
         iteration = iteration + 1
-        logger.trace(s"infer at iteration $iteration current is $j")
+        logger.debug(s"infer at iteration $iteration current is $j")
       }while(true == keepLooping)
 
       (j, bp)
@@ -292,7 +346,7 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
   {
     case Nil       => sys.error("gamma(a:AbstractDomain, ..) a is Nil")
     case a :: Nil  => gamma(a, pred)
-    case a :: rest => and(gamma(a, pred), gamma(rest, pred))
+    case a :: rest => or(gamma(a, pred), gamma(rest, pred))
   }
 
   /**
@@ -310,10 +364,56 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
       val expr = and(implies(r, m), implies(q, gamma(m, predicates)))
       if(True() == Z3.Validity.check(expr))
         result = result :+ m
+
+      //val rim = implies(r, m)
+      //val qim = implies(q, gamma(m, predicates))
+      //if(True() == Z3.Validity.check(rim) && True() == Z3.Validity.check(qim))
+      //  result = result :+ m
     }
-    r
+    result
   }
 
+
+
+  def booleanVector(size:Int, fillWith:Boolean = true):Vector[Boolean] = Vector.fill[Boolean](size)(fillWith)
+
+  /*
+   * TODO: does not work.
+   */
+  /*
+  def union2(r:AbstractDomain, q:Expression, predicates: Predicates):AbstractDomain=
+  {
+    var result:AbstractDomain = List(booleanVector(r(0).size))
+    for(m <- r)
+    {
+      val expr = and(not(implies(result, m)),
+                     implies(r, m),
+                     implies(q, gamma(m, predicates)))
+      if(True() == Z3.Validity.check(expr))
+      {
+        var c = m.toSet // c is Set[Boolean], m is Vector[Boolean]
+        for (l <- m) // l is a Boolean of a predicate
+        {
+          val d = c diff Set(l)
+          if(True() == Validity.check(and(implies(r, d),
+                                          implies(q, gamma(d, predicates)))))
+          {
+            c = d
+          }
+        }
+        result = result :+ m
+      }
+    }
+    result
+  } */
+
+  /**
+    *
+    * @param s
+    * @tparam T
+    * @return
+    */
+  implicit def set2Vector[T](s:Set[T]):Vector[T]=s.toVector
   /**
     *
     * @param b
@@ -326,11 +426,11 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
     * @param a
     * @return
     */
-  implicit def booleanVectpr2Expression(a:Vector[Boolean]):Expression=
+  implicit def booleanVector2Expression(a:Vector[Boolean]):Expression=
   {
     if(1 == a.length)
       a(0)
-    else
+    else if(a.length > 1)
     {
       var expr:Expression = a(0)
       for(i <- 1 until a.length)
@@ -339,7 +439,12 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
       }
       expr
     }
+    else
+    {
+      sys.error("psksvp.booleanVector2Expression(a) a is empty")
+    }
   }
+
 
   /**
     *
@@ -348,9 +453,47 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
     */
   implicit def abstractDomain2Expression(absDomain:AbstractDomain):Expression = absDomain match
   {
-    case Nil            => sys.error("abstractDomain2Expression(a:AbstractDomain, ..) a is Nil")
-    case a :: Nil       => a
-    case a :: b :: Nil  => or(a, b)
-    case a :: b :: rest => or(or(a, b), abstractDomain2Expression(rest))
+    case Nil       => sys.error("abstractDomain2Expression(a:AbstractDomain, ..) a is Nil")
+    case a :: Nil  => a
+    case a :: rest => or(a, abstractDomain2Expression(rest))
+  }
+
+  /**
+    *
+    * @param targets
+    * @param oldValue
+    * @return
+    */
+  def predicateCombinations(targets:List[Variable], oldValue:Map[Variable, Expression]):List[List[Expression]] =
+  {
+    /**
+      *
+      * @param v
+      * @param lsOP
+      * @return
+      */
+    def makePredicates(v:Variable, lsOP:List[String] = List("<","<=",">",">=","==","!=")):List[Expression]=lsOP match
+    {
+      case Nil         => Nil
+      case op :: rest  => List[Expression](s"$v $op ${oldValue(v)}") ::: makePredicates(v, rest)
+    }
+
+    /**
+      *
+      * @param tls
+      * @return
+      */
+    def targetPredicates(tls:List[Variable]):List[List[Expression]]=tls match
+    {
+      case Nil       => Nil
+      case v :: rest => List(makePredicates(v)) ::: targetPredicates(rest)
+    }
+
+
+    ////////////////////
+    val tp = targetPredicates(targets)
+    val mk = psksvp.crossProduct(tp)
+
+    mk
   }
 }

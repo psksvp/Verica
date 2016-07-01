@@ -268,6 +268,15 @@ object Parser extends JavaTokenParsers with PackratParsers
     }
   }
 
+  def parsePredicates(src:String):Predicates =
+  {
+    parseAll(predicates, src) match
+    {
+      case Success(topNode, _) => topNode
+      case f                   => sys.error("error while parseing: " + f)
+    }
+  }
+
 
   def parseWhile2(src:String):While=
   {
