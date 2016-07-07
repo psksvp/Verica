@@ -102,6 +102,7 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
     case Empty()                 => and(q, True())
     case Ensure(_)               => and(q, True())
     case VariableDeclaration(_,_)=> and(q, True())
+    case Return(_)               => and(q, True())
   }
 
   /**
@@ -172,9 +173,11 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
                                       }
                                       else
                                       {
-                                        val prd = generatePredicates(w, c)
-                                        val (j, b) = infer(c, While(prd, i, e, body))
-                                        While(prd, and(i, j), e, b)
+                                        val (j, b) = infer2(c, w)
+                                        While(p, and(i, j), e, b)
+//                                        val prd = generatePredicates(w, c)
+//                                        val (j, b) = infer(c, While(prd, i, e, body))
+//                                        While(prd, and(i, j), e, b)
                                       }
   }
 
@@ -220,7 +223,7 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
   }
 
 
-  /*
+
   def infer2(c:Statement, w:While):(Expression, Statement)=
   {
     def traverseContext(s:Statement):Map[Variable, Expression] = s match
@@ -236,14 +239,21 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
       case a:Sequence => flatten(a)
       case _          => c
     }
-
+    val pre = norm(True(), cs)
     val old = traverseContext(cs)
     val lsPred = predicateCombinations(targets(w.body), old)
-    for(predComb <- lsPred)
+    for(p <- lsPred)
     {
-
+      val (inv, body) = infer(cs, While(Predicates(p:_*), w.invariant, w.expr, w.body))
+      if(verify(While(Predicates(p:_*), and(w.invariant, inv), w.expr, w.body), List(pre), List("r <= 0")))
+      {
+        return (inv, body)
+      }
+      else
+        println("verify fail")
     }
-  } */
+    (False(), w.body)
+  }
 
   /**
     *
@@ -256,6 +266,8 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
     case While(p, i, e, b) =>
       val h = havoc(targets(b))
       val n = norm(True(), c)
+      println("context :" + n)
+      println("predicate :" + p)
       var r = alpha(n, p)
       var j:Expression = True()
       var bp:Statement = Empty()
@@ -265,21 +277,18 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
       do
       {
         j  = gamma(r, p)
-        println("----------")
-        println(r)
-        println(j)
-        println("==========")
         val a  = Assume(and(e, i,  j))
-        bp = traverse(Sequence(c, h, a), b)
+        bp = traverse(Sequence(c, a), b)//bp = traverse(Sequence(c, h, a), b)
         val q  = norm(True(), Sequence(c, h, a, bp))
-        next = union(r, q, p)
-        if(!next.isEmpty && r != next)
+        next = union(r, q, p) //(r.toSet union alpha(q, p).toSet).toList
+        println(next)
+        if(r != next)
           r = next
         else
           keepLooping = false
         iteration = iteration + 1
         logger.debug(s"infer at iteration $iteration current is $j")
-      }while(true == keepLooping)
+      }while(keepLooping)
 
       (j, bp)
 
@@ -300,10 +309,14 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
     {
       val combination =  psksvp.booleanVector(i, pred.count)
       val expr2Chk = implies(expr, gamma(combination, pred))
+      print("alpha exp chk: " + expr2Chk)
       if(True() == Z3.Validity.check(expr2Chk))
       {
         ls = ls :+ combination
+        println("  (TRUE)")
       }
+      else
+        println("  (FALSE)")
     }
 
     ls
@@ -361,14 +374,17 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
     var result:AbstractDomain = Nil
     for(m <- r)
     {
-      val expr = and(implies(r, m), implies(q, gamma(m, predicates)))
+      val expr = or(implies(r, m), implies(q, gamma(m, predicates)))
       if(True() == Z3.Validity.check(expr))
         result = result :+ m
 
-      //val rim = implies(r, m)
-      //val qim = implies(q, gamma(m, predicates))
-      //if(True() == Z3.Validity.check(rim) && True() == Z3.Validity.check(qim))
-      //  result = result :+ m
+//      val rim = implies(r, m)
+//      val qim = implies(q, gamma(m, predicates))
+//      println(Z3.Validity.check(rim))
+//      println(Z3.Validity.check(qim))
+//      println(Z3.Validity.check(or(rim, qim)))
+//      if(True() == Z3.Validity.check(rim) && True() == Z3.Validity.check(qim))
+//        result = result :+ m
     }
     result
   }
@@ -409,17 +425,10 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
 
   /**
     *
-    * @param s
-    * @tparam T
-    * @return
-    */
-  implicit def set2Vector[T](s:Set[T]):Vector[T]=s.toVector
-  /**
-    *
     * @param b
     * @return
     */
-  implicit def boolean2Expression(b:Boolean):Expression = if(b) True() else False()
+  def boolean2Expression(b:Boolean):Expression = if(b) True() else False()
 
   /**
     *
@@ -429,13 +438,13 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
   implicit def booleanVector2Expression(a:Vector[Boolean]):Expression=
   {
     if(1 == a.length)
-      a(0)
+      boolean2Expression(a(0))
     else if(a.length > 1)
     {
-      var expr:Expression = a(0)
+      var expr:Expression = boolean2Expression(a(0))
       for(i <- 1 until a.length)
       {
-        expr = and(expr, a(i))
+        expr = and(expr, boolean2Expression(a(i)))
       }
       expr
     }
@@ -454,8 +463,8 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
   implicit def abstractDomain2Expression(absDomain:AbstractDomain):Expression = absDomain match
   {
     case Nil       => sys.error("abstractDomain2Expression(a:AbstractDomain, ..) a is Nil")
-    case a :: Nil  => a
-    case a :: rest => or(a, abstractDomain2Expression(rest))
+    case a :: Nil  => booleanVector2Expression(a)
+    case a :: rest => or(booleanVector2Expression(a), abstractDomain2Expression(rest))
   }
 
   /**

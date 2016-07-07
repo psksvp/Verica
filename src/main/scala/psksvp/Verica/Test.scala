@@ -116,7 +116,7 @@ object Test
 
   def testInferWithArray: Unit =
   {
-    val f1: Function =
+    val fl: Function =
       """
         |  function sumArray(a:Array<Integer>):Integer
         |  [assume(a.length > 0),
@@ -127,7 +127,7 @@ object Test
         |    local r:Integer
         |    i := 0
         |    r := 0
-        |    while(i < a.length, [(r >= 0)(i >= 0)(i < 0),true])
+        |    while(i < a.length, [(i >= 0)(r >= 0)(i < 0)(r < 0),true])
         |    {
         |      r := r + a[i]
         |      i := i + 1
@@ -137,8 +137,26 @@ object Test
       """.stripMargin
 
 
+    val f1: Function =
+      """
+        |  function sumArray(n:Integer):Integer
+        |  [assume(n > 0), ensure(r >= 0)]
+        |  {
+        |    local i:Integer
+        |    local r:Integer
+        |    i := 0
+        |    r := 0
+        |    while(i < n, [,true])
+        |    {
+        |      r := r - i
+        |      i := i + 1
+        |    }
+        |    return(r)
+        |  }
+      """.stripMargin
 
     println(f1)
+    //println(strongestPostCondition(f1.body, True()))
     val f2 = traverse(f1)
     println(f2)
     println(verify(f2))
@@ -222,7 +240,7 @@ object Test
         |    local r:Integer
         |    i := 0
         |    a := 0
-        |    while(i < n, [(i >= 0)(i < 0)(a == 0),true])
+        |    while(i < n, [(i < 0)(i >= 0)(a == 0),true])
         |    {
         |      i := i + 1
         |    }
@@ -248,15 +266,15 @@ object Test
     //testVerifyFindMax
     testInferOnTrace
 
-    //println(Parser.parsePyZ3GenVar("x ! 2"))
 
-    val k = predicateCombinations(List[Variable](Variable("a"), Variable("b"), Variable("c")),
-                           Map[Variable, Expression](Variable("a") -> "0",
-                                                     Variable("b") -> "0",
-                                                      Variable("c") -> "0")  )
-    println(k)
-
-    val m = List(Vector(false, false), Vector(true, false), Vector(true, true))
-    println(abstractDomain2Expression(m))
+//    val k = predicateCombinations(List[Variable](Variable("a"), Variable("b"), Variable("c")),
+//                           Map[Variable, Expression](Variable("a") -> "0",
+//                                                     Variable("b") -> "0",
+//                                                      Variable("c") -> "0")  )
+//    println(k)
+//
+//    val m = List(Vector(false, false), Vector(true, false), Vector(true, true))
+//    val p = Predicates("r > 2", "j < 10")
+//    println(abstractDomain2Expression(m))
   }
 }

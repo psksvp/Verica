@@ -285,6 +285,18 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
     }
   }
 
+  def verify(w:While, lsAssume:List[Expression], lsPost:List[Expression]):Boolean =
+  {
+    var result = true
+    for(vc <- wvc(w, and(lsPost)))
+    {
+      val checkResult = Validity.check(vc, lsAssume)
+      println("checking " + vc + " is " + checkResult)
+      result = result && (if(checkResult.isInstanceOf[True]) true else false)
+    }
+    result
+  }
+
   /**
     *
     * @param aSeq
