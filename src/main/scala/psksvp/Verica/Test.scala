@@ -116,28 +116,28 @@ object Test
 
   def testInferWithArray: Unit =
   {
-    val fl: Function =
+    val f1: Function =
       """
         |  function sumArray(a:Array<Integer>):Integer
         |  [assume(a.length > 0),
-        |   assume(forAll(j, a[j] >= 0)),
-        |   ensure(r >= 0)]
+        |   assume(forAll(j, a[j] > 0)),
+        |   ensure(r > 0)]
         |  {
         |    local i:Integer
         |    local r:Integer
+        |    local j:Integer
         |    i := 0
         |    r := 0
-        |    while(i < a.length, [(i >= 0)(r >= 0)(i < 0)(r < 0),true])
+        |    while(i < a.length, [(i >= 0)(i <= 0)(r >= 0)(r <= 0),true])
         |    {
         |      r := r + a[i]
         |      i := i + 1
         |    }
-        |    return(r)
         |  }
       """.stripMargin
 
 
-    val f1: Function =
+    val fl: Function =
       """
         |  function sumArray(n:Integer):Integer
         |  [assume(n > 0), ensure(r >= 0)]
@@ -234,13 +234,11 @@ object Test
     val f1: Function =
       """
         |  function aTrace(n:Integer):Integer
-        |  [assume(n > 0), ensure(a >= 0)]
+        |  [assume(n > 0), ensure(a >= 0 /\ i >= 0)]
         |  {
-        |    local i:Integer
-        |    local r:Integer
         |    i := 0
         |    a := 0
-        |    while(i < n, [(i < 0)(i >= 0)(a == 0),true])
+        |    while(i < n, [(i <= 0)(i >= 0),true])
         |    {
         |      i := i + 1
         |    }

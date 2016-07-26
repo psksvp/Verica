@@ -292,7 +292,8 @@ object Parser extends JavaTokenParsers with PackratParsers
     parseAll(z3pyListOutput, src) match
     {
       case Success(topNode, _) => topNode
-      case f                   => sys.error("expression is not a z3pyListOutput expression")
+      case f                   => println(src)
+                                  sys.error("expression is not a z3pyListOutput expression")
     }
   }
 

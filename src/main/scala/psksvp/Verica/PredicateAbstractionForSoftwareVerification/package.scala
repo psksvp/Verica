@@ -9,7 +9,7 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
 {
   import psksvp.Verica.Lang._
 
-  type AbstractDomain = List[Vector[Boolean]]
+  type AbstractDomain = Expression
 
   /**
     *
@@ -25,16 +25,6 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
     s
   }
 
-  /**
-    *
-    * @param a
-    * @return
-    */
-  implicit def AbstractDomain2String(a:AbstractDomain):String = a match
-  {
-    case s :: rest => "[" + booleanVector2String(s) + " " + AbstractDomain2String(rest) + "]"
-    case Nil       => ""
-  }
 
   /**
     *
@@ -165,7 +155,7 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
     case Sequence(a)               => traverse(c, a)
     case Sequence(a, rest@_*)      => val aP = traverse(c, a)
                                       val bP = traverse(Sequence(c, aP), Sequence(rest: _*))
-                                      Sequence(aP, bP).flatten
+                                      Sequence(aP, bP)//.flatten
     case w@While(p, i, e, body)    => if(p.count > 0)
                                       {
                                         val (j, b) = infer(c, w)
@@ -173,7 +163,7 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
                                       }
                                       else
                                       {
-                                        val (j, b) = infer2(c, w)
+                                        val (j, b) = infer(c, w)
                                         While(p, and(i, j), e, b)
 //                                        val prd = generatePredicates(w, c)
 //                                        val (j, b) = infer(c, While(prd, i, e, body))
@@ -224,36 +214,7 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
 
 
 
-  def infer2(c:Statement, w:While):(Expression, Statement)=
-  {
-    def traverseContext(s:Statement):Map[Variable, Expression] = s match
-    {
-      case Sequence(Assignment(v, e), rest@_*) => Map(v -> e) ++ traverseContext(Sequence(rest: _*))
-      case Sequence(_, rest@_*)                => traverseContext(Sequence(rest: _*))
-      case Assignment(v, e)                    => Map(v -> e)
-      case _                                   => Map.empty[Variable, Expression]
-    }
 
-    val cs = c match
-    {
-      case a:Sequence => flatten(a)
-      case _          => c
-    }
-    val pre = norm(True(), cs)
-    val old = traverseContext(cs)
-    val lsPred = predicateCombinations(targets(w.body), old)
-    for(p <- lsPred)
-    {
-      val (inv, body) = infer(cs, While(Predicates(p:_*), w.invariant, w.expr, w.body))
-      if(verify(While(Predicates(p:_*), and(w.invariant, inv), w.expr, w.body), List(pre), List("r <= 0")))
-      {
-        return (inv, body)
-      }
-      else
-        println("verify fail")
-    }
-    (False(), w.body)
-  }
 
   /**
     *
@@ -271,17 +232,17 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
       var r = alpha(n, p)
       var j:Expression = True()
       var bp:Statement = Empty()
-      var next:AbstractDomain = Nil
       var keepLooping = true
       var iteration = 0
       do
       {
-        j  = gamma(r, p)
+        j  = gamma(r)
         val a  = Assume(and(e, i,  j))
-        bp = traverse(Sequence(c, a), b)//bp = traverse(Sequence(c, h, a), b)
+        bp = traverse(Sequence(c, h, a), b)
         val q  = norm(True(), Sequence(c, h, a, bp))
-        next = union(r, q, p) //(r.toSet union alpha(q, p).toSet).toList
-        println(next)
+        val next = union(r, q, p)
+        println("next is"  + next)
+        println("   r is"  + r)
         if(r != next)
           r = next
         else
@@ -301,66 +262,14 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
     * @param pred
     * @return
     */
-  def alpha(expr:Expression, pred:Predicates):AbstractDomain=
-  {
-    var ls:AbstractDomain = Nil
-    val combinationSize = scala.math.pow(2, pred.count).toInt  // TODO: can have overflow problem
-    for(i <- 0 until combinationSize)
-    {
-      val combination =  psksvp.booleanVector(i, pred.count)
-      val expr2Chk = implies(expr, gamma(combination, pred))
-      print("alpha exp chk: " + expr2Chk)
-      if(True() == Z3.Validity.check(expr2Chk))
-      {
-        ls = ls :+ combination
-        println("  (TRUE)")
-      }
-      else
-        println("  (FALSE)")
-    }
-
-    ls
-  }
-
-  /**
-    *
-    * @param combination
-    * @param pred
-    * @return
-    */
-  def gamma(combination:Vector[Boolean], pred:Predicates):Expression=
-  {
-    require(combination.length == pred.count, "gamma error: absDomain.size != predicates.count")
-
-    def makeExpression(b:Boolean, p:Predicate):Expression = if(b) p else not(p)
-
-    if(1 == combination.length)
-    {
-      makeExpression(combination(0), pred(0))
-    }
-    else
-    {
-      var expr = makeExpression(combination(0), pred(0))
-      for(i <- 1 until combination.length)
-      {
-        expr = and(expr, makeExpression(combination(i), pred(i)))
-      }
-      expr
-    }
-  }
+  def alpha(expr:Expression, pred:Predicates):AbstractDomain = union(False(), expr, pred)
 
   /**
     *
     * @param absDomain
-    * @param pred
     * @return
     */
-  def gamma(absDomain:AbstractDomain, pred:Predicates):Expression = absDomain match
-  {
-    case Nil       => sys.error("gamma(a:AbstractDomain, ..) a is Nil")
-    case a :: Nil  => gamma(a, pred)
-    case a :: rest => or(gamma(a, pred), gamma(rest, pred))
-  }
+  def gamma(absDomain:AbstractDomain):Expression = absDomain
 
   /**
     *
@@ -369,102 +278,38 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
     * @param predicates
     * @return
     */
-  def union(r:AbstractDomain, q:Expression, predicates: Predicates):AbstractDomain=
+  def union(r:AbstractDomain, q:Expression, predicates: Predicates):AbstractDomain =
   {
-    var result:AbstractDomain = Nil
-    for(m <- r)
+    def makeExpression(b:Vector[Boolean], p:Predicates):Expression =
     {
-      val expr = or(implies(r, m), implies(q, gamma(m, predicates)))
-      if(True() == Z3.Validity.check(expr))
-        result = result :+ m
-
-//      val rim = implies(r, m)
-//      val qim = implies(q, gamma(m, predicates))
-//      println(Z3.Validity.check(rim))
-//      println(Z3.Validity.check(qim))
-//      println(Z3.Validity.check(or(rim, qim)))
-//      if(True() == Z3.Validity.check(rim) && True() == Z3.Validity.check(qim))
-//        result = result :+ m
-    }
-    result
-  }
-
-
-
-  def booleanVector(size:Int, fillWith:Boolean = true):Vector[Boolean] = Vector.fill[Boolean](size)(fillWith)
-
-  /*
-   * TODO: does not work.
-   */
-  /*
-  def union2(r:AbstractDomain, q:Expression, predicates: Predicates):AbstractDomain=
-  {
-    var result:AbstractDomain = List(booleanVector(r(0).size))
-    for(m <- r)
-    {
-      val expr = and(not(implies(result, m)),
-                     implies(r, m),
-                     implies(q, gamma(m, predicates)))
-      if(True() == Z3.Validity.check(expr))
+      require(b.size == p.count, "unionX makeExpression, size of b != p.count")
+      var expr:Expression = if(b(0)) p(0) else not(p(0))
+      for(i <- 1 until p.count)
       {
-        var c = m.toSet // c is Set[Boolean], m is Vector[Boolean]
-        for (l <- m) // l is a Boolean of a predicate
-        {
-          val d = c diff Set(l)
-          if(True() == Validity.check(and(implies(r, d),
-                                          implies(q, gamma(d, predicates)))))
-          {
-            c = d
-          }
-        }
-        result = result :+ m
-      }
-    }
-    result
-  } */
-
-  /**
-    *
-    * @param b
-    * @return
-    */
-  def boolean2Expression(b:Boolean):Expression = if(b) True() else False()
-
-  /**
-    *
-    * @param a
-    * @return
-    */
-  implicit def booleanVector2Expression(a:Vector[Boolean]):Expression=
-  {
-    if(1 == a.length)
-      boolean2Expression(a(0))
-    else if(a.length > 1)
-    {
-      var expr:Expression = boolean2Expression(a(0))
-      for(i <- 1 until a.length)
-      {
-        expr = and(expr, boolean2Expression(a(i)))
+        expr = or(expr, if(b(i)) p(i) else not(p(i)))
       }
       expr
     }
-    else
+
+    var result:Expression = True()
+    val combinationSize = scala.math.pow(2, predicates.count).toInt  // TODO: can have overflow problem
+    for(i <- 0 until combinationSize)
     {
-      sys.error("psksvp.booleanVector2Expression(a) a is empty")
+      val combination = psksvp.booleanVector(i, predicates.count)
+      val m = makeExpression(combination, predicates)
+      val qExpr = implies(q, m)
+      val rExpr = implies(r, m)
+      val expr = and(rExpr, qExpr)
+
+      if (True() == Z3.Validity.check(expr))
+      {
+        result = and(result, m)
+        println("union check rtn  True(): " + expr)
+      }
+      else
+        println("union check rtn False(): " + expr)
     }
-  }
-
-
-  /**
-    *
-    * @param absDomain
-    * @return
-    */
-  implicit def abstractDomain2Expression(absDomain:AbstractDomain):Expression = absDomain match
-  {
-    case Nil       => sys.error("abstractDomain2Expression(a:AbstractDomain, ..) a is Nil")
-    case a :: Nil  => booleanVector2Expression(a)
-    case a :: rest => or(booleanVector2Expression(a), abstractDomain2Expression(rest))
+    result
   }
 
   /**
