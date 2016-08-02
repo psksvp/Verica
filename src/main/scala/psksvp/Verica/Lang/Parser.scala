@@ -63,9 +63,9 @@ object Parser extends JavaTokenParsers with PackratParsers
   lazy val trueLiteral = "true"                         ^^ {t => True()}
   lazy val falseLiteral = "false"                       ^^ {t => False()}
   lazy val notExpr = "~" ~> expression                  ^^ {t => Unary(Negation(), t)}
-  lazy val notFunc = "Not(" ~> expression <~ ")"        ^^ {t => Unary(Negation(), t)}
-  lazy val andFunc = "And(" ~> expressionList <~ ")"    ^^ {t => psksvp.Verica.and(t)}
-  lazy val orFunc = "Or(" ~> expressionList <~ ")"      ^^ {t => psksvp.Verica.or(t)}
+  lazy val notFunc = "Not" ~ "(" ~> expression <~ ")"        ^^ {t => Unary(Negation(), t)}
+  lazy val andFunc = "And" ~ "(" ~> expressionList <~ ")"    ^^ {t => psksvp.Verica.and(t)}
+  lazy val orFunc = "Or" ~ "(" ~> expressionList <~ ")"      ^^ {t => psksvp.Verica.or(t)}
   lazy val variable = identifier                        ^^ {t => Variable(t)}
   lazy val invokeExp = identifier ~ "." ~ identifier ~ ("(" ~> expressionList <~ ")")  ^^
   {

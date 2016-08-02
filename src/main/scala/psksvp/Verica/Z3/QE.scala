@@ -34,6 +34,10 @@ object QE
     // they are meant for easy debugging
     val code = makeZ3Python(quantifier, suchThat)
     val result = psksvp.evalPython(code)
+    //println("------------------------")
+    //println(code)
+    //println("========================")
+    //println(result)
     val pyExpr = Parser.parsePyZ3ListOutput(result)
     and(pyExpr)
   }
@@ -43,26 +47,36 @@ object QE
     // here I assume that every variable is an Interger (Ints)
     // z3py has Real, Reals, Int, Ints, Bool, Bools
     val varDecl = Z3.makeIntVariables(suchThat.expression) + ";" +
-                  Z3.makeIntVariables(quantifier.allVariables)
+      Z3.makeIntVariables(quantifier.allVariables)
     val qfType = quantifier match
     {
       case e:Exists => "Exists(" + e.toString + "," + Z3.pythonize(suchThat.expression) + ")"
       case e:ForAll => "ForAll(" + e.toString + "," + Z3.pythonize(suchThat.expression) + ")"
     }
 
-    val tactic = "sym" + psksvp.gensym()
-    val goal = "sym" + psksvp.gensym()
+    val tactic = "tACTIC" + psksvp.gensym()
+    val goal = "gOAL" + psksvp.gensym()
+    val count = "cOunt" + psksvp.gensym()
+    val obj = "obj" + psksvp.gensym()
 
     s"""
-      |from z3 import *
-      |$varDecl
-      |$goal = Goal()
-      |$goal.add($qfType)
-      |$tactic = Tactic('qe')
-      |print($tactic($goal))
+       |from z3 import *
+       |$varDecl
+       |$goal = Goal()
+       |$goal.add($qfType)
+       |$tactic = Tactic('qe')
+       |#print($tactic($goal))
+       |print '[['
+       |$count = 0
+       |for $obj in $tactic($goal)[0]:
+       |  if $count != len($tactic($goal)[0]) - 1:
+       |    print "%s," % $obj
+       |  else:
+       |    print "%s" % $obj
+       |  $count = $count + 1
+       |print ']]'
     """.stripMargin.trim
   }
 }
-
 
 

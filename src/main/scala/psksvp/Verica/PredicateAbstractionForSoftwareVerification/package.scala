@@ -163,11 +163,9 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
                                       }
                                       else
                                       {
-                                        val (j, b) = infer(c, w)
-                                        While(p, and(i, j), e, b)
-//                                        val prd = generatePredicates(w, c)
-//                                        val (j, b) = infer(c, While(prd, i, e, body))
-//                                        While(prd, and(i, j), e, b)
+                                        val prd = generatePredicates(w, c)
+                                        val (j, b) = infer(c, While(prd, i, e, body))
+                                        While(prd, and(i, j), e, b)
                                       }
   }
 

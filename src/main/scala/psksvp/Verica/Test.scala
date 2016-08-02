@@ -1,5 +1,8 @@
 package psksvp.Verica
 
+import au.edu.mq.comp.smtlib.parser.SMTLIB2Syntax.IntSort
+import au.edu.mq.comp.smtlib.theories.IntTerm
+import au.edu.mq.comp.smtlib.typedterms.VarTerm
 import psksvp.Verica.Z3.{Exists, QE, SuchThat, Validity}
 import psksvp.Verica.PredicateAbstractionForSoftwareVerification._
 
@@ -140,10 +143,8 @@ object Test
     val fl: Function =
       """
         |  function sumArray(n:Integer):Integer
-        |  [assume(n > 0), ensure(r >= 0)]
+        |  [assume(n > 0), ensure(r <= 0 /\ i >= 0)]
         |  {
-        |    local i:Integer
-        |    local r:Integer
         |    i := 0
         |    r := 0
         |    while(i < n, [,true])
@@ -151,13 +152,13 @@ object Test
         |      r := r - i
         |      i := i + 1
         |    }
-        |    return(r)
+        |
         |  }
       """.stripMargin
 
-    println(f1)
+    println(fl)
     //println(strongestPostCondition(f1.body, True()))
-    val f2 = traverse(f1)
+    val f2 = traverse(fl)
     println(f2)
     println(verify(f2))
 
@@ -234,17 +235,20 @@ object Test
     val f1: Function =
       """
         |  function aTrace(n:Integer):Integer
-        |  [assume(n > 0), ensure(a >= 0 /\ i >= 0)]
+        |  [assume(n > 0), ensure(k <= 0 /\ i >= 0 /\ m >= 1)]
         |  {
         |    i := 0
+        |    k := 0
+        |    m := 1
         |    a := 0
-        |    while(i < n, [(i <= 0)(i >= 0),true])
+        |    while(i < n, [,true])
         |    {
+        |      k := k - i
+        |      m := m + i
         |      i := i + 1
         |    }
         |  }
       """.stripMargin
-
 
 
     println(f1)
@@ -264,15 +268,5 @@ object Test
     //testVerifyFindMax
     testInferOnTrace
 
-
-//    val k = predicateCombinations(List[Variable](Variable("a"), Variable("b"), Variable("c")),
-//                           Map[Variable, Expression](Variable("a") -> "0",
-//                                                     Variable("b") -> "0",
-//                                                      Variable("c") -> "0")  )
-//    println(k)
-//
-//    val m = List(Vector(false, false), Vector(true, false), Vector(true, true))
-//    val p = Predicates("r > 2", "j < 10")
-//    println(abstractDomain2Expression(m))
   }
 }
