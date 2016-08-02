@@ -34,10 +34,6 @@ object QE
     // they are meant for easy debugging
     val code = makeZ3Python(quantifier, suchThat)
     val result = psksvp.evalPython(code)
-    //println("------------------------")
-    //println(code)
-    //println("========================")
-    //println(result)
     val pyExpr = Parser.parsePyZ3ListOutput(result)
     and(pyExpr)
   }
