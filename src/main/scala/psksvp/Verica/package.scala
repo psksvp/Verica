@@ -35,6 +35,8 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
     case _                            => Nil
   }
 
+  def vars(exp:Expression) = listOfVariablesIn(exp)
+
 
   ////////////////////////////////////////////
   def and(exprs:Expression*):Expression = and(exprs.toList)
@@ -170,7 +172,7 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
     */
   def strongestPostCondition(stmt:Statement, q:Predicate):Formular =
   {
-    import psksvp.Verica.PredicateAbstractionForSoftwareVerification._
+    import psksvp.Verica.PredicateAbstraction._
     norm(q, stmt)
   }
 

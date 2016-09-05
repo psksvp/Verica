@@ -30,12 +30,17 @@ object QE
 {
   def solve(quantifier: Quantifier, suchThat: SuchThat):Expression=
   {
-    // do not simplify the following calls
-    // they are meant for easy debugging
-    val code = makeZ3Python(quantifier, suchThat)
-    val result = psksvp.evalPython(code)
-    val pyExpr = Parser.parsePyZ3ListOutput(result)
-    and(pyExpr)
+    if(quantifier.allVariables.isEmpty)
+      suchThat.expression
+    else
+    {
+      // do not simplify the following calls
+      // they are meant for easy debugging
+      val code = makeZ3Python(quantifier, suchThat)
+      val result = psksvp.evalPython(code)
+      val pyExpr = Parser.parsePyZ3ListOutput(result)
+      and(pyExpr)
+    }
   }
 
   private def makeZ3Python(quantifier: Quantifier, suchThat: SuchThat):String=

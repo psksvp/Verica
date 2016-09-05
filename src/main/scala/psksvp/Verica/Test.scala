@@ -1,10 +1,7 @@
 package psksvp.Verica
 
-import au.edu.mq.comp.smtlib.parser.SMTLIB2Syntax.IntSort
-import au.edu.mq.comp.smtlib.theories.IntTerm
-import au.edu.mq.comp.smtlib.typedterms.VarTerm
 import psksvp.Verica.Z3.{Exists, QE, SuchThat, Validity}
-import psksvp.Verica.PredicateAbstractionForSoftwareVerification._
+import psksvp.Verica.PredicateAbstraction._
 
 
 
@@ -235,29 +232,53 @@ object Test
     val f1: Function =
       """
         |  function aTrace(n:Integer):Integer
-        |  [assume(n > 0), ensure(k <= 0 /\ i >= 0 /\ m >= 1)]
+        |  [assume(n > 0), ensure(k <= 0 /\ i >= 0 /\ j < 20)]
         |  {
         |    i := 0
+        |    j := 20
         |    k := 0
-        |    m := 1
-        |    a := 0
         |    while(i < n, [,true])
         |    {
         |      k := k - i
-        |      m := m + i
         |      i := i + 1
+        |      j := j - 1
         |    }
         |  }
       """.stripMargin
 
+    val fx:Function =
+    """
+      |function aFunc(n:Integer):Integer
+      |[assume(n > 0), ensure(i >= 0)]
+      |{
+      |  i := 0
+      |  while(i <= n, [,true])
+      |  {
+      |    i := i + 1
+      |  }
+      |}
+    """.stripMargin
 
-    println(f1)
-    val f2 = traverse(f1)
+    val fl:Function =
+      """
+        |function aFunc(n:Integer):Integer
+        |[assume(n > 0), ensure(i > 0)]
+        |{
+        |  i := 0
+        |  while(i <= n, [(i >= 0)(i <= 0),true])
+        |  {
+        |    two := i
+        |    add := two + 1
+        |    i := add
+        |  }
+        |}
+      """.stripMargin
+
+
+    println(fl)
+    val f2 = traverse(fl)
     println(f2)
     println(verify(f2))
-
-    //val a = assumptionOf(f1)
-    //println(Z3.makeAssumptions("sOlver", a))
   }
 
 
@@ -266,7 +287,85 @@ object Test
     //testSP
     //testInferWithArray
     //testVerifyFindMax
+
     testInferOnTrace
+
+    println("--------------------------------------------")
+
+    val context:Expression =
+          """
+            |retval2 == 0 /\ n2 == 10 /\ a2 == 0 /\ i2 == 0
+          """.stripMargin
+
+    var r = alpha(context, "(i2 >= 0)(i2 <= 0)")
+    println(r)
+
+
+    val guardAndBody:Expression =
+      """
+        |zero1 == i2 /\
+        |one1 == n2 /\
+        |cmp1 == (zero1 <= one1) /\
+        |two1 == i2 /\
+        |add1 == (two1 + 1) /\
+        |i3 == add1
+      """.stripMargin
+
+    val varsLastIndexInTerm = List(Variable("i3"),
+                                   Variable("zero1"),
+                                   Variable("one1"),
+                                   Variable("n2"),
+                                   Variable("cmp1"),
+                                   Variable("two1"),
+                                   Variable("add1"))
+
+    val diff = vars(guardAndBody).toSet diff varsLastIndexInTerm.toSet
+
+    println(diff)
+
+    val m = QE.solve(Exists(diff.toSeq), SuchThat(and(guardAndBody, r)))  // use r because i2 is index 2 is entry point index of i
+    println("m is :" + m)
+
+    //rename m to mHash ((one1 = n2) /\ ((zero1 <= one1) /\ ((add1 = (1 + two1)) /\ ((i3 = add1) /\ (((two1 + (-1 * zero1)) <= 0) /\ (((zero1 + (-1 * two1)) <= 0) /\ (((zero1 <= -1) \/ (zero1 <= 0)) /\ (((zero1 >= 0) \/ (zero1 >= 1)) /\ ((zero1 >= 0) \/ (zero1 <= 0))))))))))
+    val mHash:Expression =
+      """
+        |((one = n) /\ ((zero <= one) /\ ((add = (1 + two)) /\ ((i = add) /\ (((two + (-1 * zero)) <= 0) /\ (((zero + (-1 * two)) <= 0) /\ (((zero <= -1) \/ (zero <= 0)) /\ (((zero >= 0) \/ (zero >= 1)) /\ ((zero >= 0) \/ (zero <= 0))))))))))
+      """.stripMargin
+
+    //rename r to rHash (((true /\ (~(i2 >= 0) \/ (i2 <= 0))) /\ ((i2 >= 0) \/ ~(i2 <= 0))) /\ ((i2 >= 0) \/ (i2 <= 0)))
+    var rHash:Expression = """(((true /\ (~(i >= 0) \/ (i <= 0))) /\ ((i >= 0) \/ ~(i <= 0))) /\ ((i >= 0) \/ (i <= 0)))"""
+
+    //rename context
+    var contextHash:Expression =
+      """
+        |retval == 0 /\ n == 10 /\ a == 0 /\ i == 0
+      """.stripMargin
+
+    println("-----------------------------------------------------------")
+    var q = mHash //and(contextHash, rHash, mHash)
+    var next = union(rHash, q, "(i >= 0)(i <= 0)")
+
+    println("next: " + next)
+    println("rHash:" + rHash)
+    println(rHash == next)
+
+    rHash = next
+
+    println("-----------------------------------------------------------")
+    //q = and(contextHash, rHash, mHash)
+    next = union(rHash, q, "(i >= 0)(i <= 0)")
+
+    println("next: " + next)
+    println("rHash:" + rHash)
+    println(rHash == next)
+
+  }
+}
+
+
+
+
+
 
 //    import psksvp.Verica.Z3._
 //    val exp:Expression =
@@ -274,5 +373,35 @@ object Test
 //        |(true /\ (((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((true /\ (((((~(k <= 0) \/ ~(k >= 0)) \/ ~(m <= 1)) \/ ~(m >= 1)) \/ ~(i <= 0)) \/ (i >= 0))) /\ (((((~(k <= 0) \/ ~(k >= 0)) \/ ~(m <= 1)) \/ ~(m >= 1)) \/ (i <= 0)) \/ (i >= 0))) /\ (((((~(k <= 0) \/ ~(k >= 0)) \/ ~(m <= 1)) \/ (m >= 1)) \/ ~(i <= 0)) \/ ~(i >= 0))) /\ (((((~(k <= 0) \/ ~(k >= 0)) \/ ~(m <= 1)) \/ (m >= 1)) \/ ~(i <= 0)) \/ (i >= 0))) /\ (((((~(k <= 0) \/ ~(k >= 0)) \/ ~(m <= 1)) \/ (m >= 1)) \/ (i <= 0)) \/ ~(i >= 0))) /\ (((((~(k <= 0) \/ ~(k >= 0)) \/ ~(m <= 1)) \/ (m >= 1)) \/ (i <= 0)) \/ (i >= 0))) /\ (((((~(k <= 0) \/ ~(k >= 0)) \/ (m <= 1)) \/ ~(m >= 1)) \/ ~(i <= 0)) \/ ~(i >= 0))) /\ (((((~(k <= 0) \/ ~(k >= 0)) \/ (m <= 1)) \/ ~(m >= 1)) \/ ~(i <= 0)) \/ (i >= 0))) /\ (((((~(k <= 0) \/ ~(k >= 0)) \/ (m <= 1)) \/ ~(m >= 1)) \/ (i <= 0)) \/ ~(i >= 0))) /\ (((((~(k <= 0) \/ ~(k >= 0)) \/ (m <= 1)) \/ ~(m >= 1)) \/ (i <= 0)) \/ (i >= 0))) /\ (((((~(k <= 0) \/ ~(k >= 0)) \/ (m <= 1)) \/ (m >= 1)) \/ ~(i <= 0)) \/ ~(i >= 0))) /\ (((((~(k <= 0) \/ ~(k >= 0)) \/ (m <= 1)) \/ (m >= 1)) \/ ~(i <= 0)) \/ (i >= 0))) /\ (((((~(k <= 0) \/ ~(k >= 0)) \/ (m <= 1)) \/ (m >= 1)) \/ (i <= 0)) \/ ~(i >= 0))) /\ (((((~(k <= 0) \/ ~(k >= 0)) \/ (m <= 1)) \/ (m >= 1)) \/ (i <= 0)) \/ (i >= 0))) /\ (((((~(k <= 0) \/ (k >= 0)) \/ ~(m <= 1)) \/ ~(m >= 1)) \/ ~(i <= 0)) \/ ~(i >= 0))) /\ (((((~(k <= 0) \/ (k >= 0)) \/ ~(m <= 1)) \/ ~(m >= 1)) \/ ~(i <= 0)) \/ (i >= 0))) /\ (((((~(k <= 0) \/ (k >= 0)) \/ ~(m <= 1)) \/ ~(m >= 1)) \/ (i <= 0)) \/ ~(i >= 0))) /\ (((((~(k <= 0) \/ (k >= 0)) \/ ~(m <= 1)) \/ ~(m >= 1)) \/ (i <= 0)) \/ (i >= 0))) /\ (((((~(k <= 0) \/ (k >= 0)) \/ ~(m <= 1)) \/ (m >= 1)) \/ ~(i <= 0)) \/ ~(i >= 0))) /\ (((((~(k <= 0) \/ (k >= 0)) \/ ~(m <= 1)) \/ (m >= 1)) \/ ~(i <= 0)) \/ (i >= 0))) /\ (((((~(k <= 0) \/ (k >= 0)) \/ ~(m <= 1)) \/ (m >= 1)) \/ (i <= 0)) \/ ~(i >= 0))) /\ (((((~(k <= 0) \/ (k >= 0)) \/ ~(m <= 1)) \/ (m >= 1)) \/ (i <= 0)) \/ (i >= 0))) /\ (((((~(k <= 0) \/ (k >= 0)) \/ (m <= 1)) \/ ~(m >= 1)) \/ ~(i <= 0)) \/ ~(i >= 0))) /\ (((((~(k <= 0) \/ (k >= 0)) \/ (m <= 1)) \/ ~(m >= 1)) \/ ~(i <= 0)) \/ (i >= 0))) /\ (((((~(k <= 0) \/ (k >= 0)) \/ (m <= 1)) \/ ~(m >= 1)) \/ (i <= 0)) \/ (i >= 0))) /\ (((((~(k <= 0) \/ (k >= 0)) \/ (m <= 1)) \/ (m >= 1)) \/ ~(i <= 0)) \/ ~(i >= 0))) /\ (((((~(k <= 0) \/ (k >= 0)) \/ (m <= 1)) \/ (m >= 1)) \/ ~(i <= 0)) \/ (i >= 0))) /\ (((((~(k <= 0) \/ (k >= 0)) \/ (m <= 1)) \/ (m >= 1)) \/ (i <= 0)) \/ ~(i >= 0))) /\ (((((~(k <= 0) \/ (k >= 0)) \/ (m <= 1)) \/ (m >= 1)) \/ (i <= 0)) \/ (i >= 0))) /\ ((((((k <= 0) \/ ~(k >= 0)) \/ ~(m <= 1)) \/ ~(m >= 1)) \/ ~(i <= 0)) \/ ~(i >= 0))) /\ ((((((k <= 0) \/ ~(k >= 0)) \/ ~(m <= 1)) \/ ~(m >= 1)) \/ ~(i <= 0)) \/ (i >= 0))) /\ ((((((k <= 0) \/ ~(k >= 0)) \/ ~(m <= 1)) \/ ~(m >= 1)) \/ (i <= 0)) \/ ~(i >= 0))) /\ ((((((k <= 0) \/ ~(k >= 0)) \/ ~(m <= 1)) \/ ~(m >= 1)) \/ (i <= 0)) \/ (i >= 0))) /\ ((((((k <= 0) \/ ~(k >= 0)) \/ ~(m <= 1)) \/ (m >= 1)) \/ ~(i <= 0)) \/ ~(i >= 0))) /\ ((((((k <= 0) \/ ~(k >= 0)) \/ ~(m <= 1)) \/ (m >= 1)) \/ ~(i <= 0)) \/ (i >= 0))) /\ ((((((k <= 0) \/ ~(k >= 0)) \/ ~(m <= 1)) \/ (m >= 1)) \/ (i <= 0)) \/ ~(i >= 0))) /\ ((((((k <= 0) \/ ~(k >= 0)) \/ ~(m <= 1)) \/ (m >= 1)) \/ (i <= 0)) \/ (i >= 0))) /\ ((((((k <= 0) \/ ~(k >= 0)) \/ (m <= 1)) \/ ~(m >= 1)) \/ ~(i <= 0)) \/ ~(i >= 0))) /\ ((((((k <= 0) \/ ~(k >= 0)) \/ (m <= 1)) \/ ~(m >= 1)) \/ ~(i <= 0)) \/ (i >= 0))) /\ ((((((k <= 0) \/ ~(k >= 0)) \/ (m <= 1)) \/ ~(m >= 1)) \/ (i <= 0)) \/ ~(i >= 0))) /\ ((((((k <= 0) \/ ~(k >= 0)) \/ (m <= 1)) \/ ~(m >= 1)) \/ (i <= 0)) \/ (i >= 0))) /\ ((((((k <= 0) \/ ~(k >= 0)) \/ (m <= 1)) \/ (m >= 1)) \/ ~(i <= 0)) \/ ~(i >= 0))) /\ ((((((k <= 0) \/ ~(k >= 0)) \/ (m <= 1)) \/ (m >= 1)) \/ ~(i <= 0)) \/ (i >= 0))) /\ ((((((k <= 0) \/ ~(k >= 0)) \/ (m <= 1)) \/ (m >= 1)) \/ (i <= 0)) \/ ~(i >= 0))) /\ ((((((k <= 0) \/ ~(k >= 0)) \/ (m <= 1)) \/ (m >= 1)) \/ (i <= 0)) \/ (i >= 0))) /\ ((((((k <= 0) \/ (k >= 0)) \/ ~(m <= 1)) \/ ~(m >= 1)) \/ ~(i <= 0)) \/ ~(i >= 0))) /\ ((((((k <= 0) \/ (k >= 0)) \/ ~(m <= 1)) \/ ~(m >= 1)) \/ ~(i <= 0)) \/ (i >= 0))) /\ ((((((k <= 0) \/ (k >= 0)) \/ ~(m <= 1)) \/ ~(m >= 1)) \/ (i <= 0)) \/ ~(i >= 0))) /\ ((((((k <= 0) \/ (k >= 0)) \/ ~(m <= 1)) \/ ~(m >= 1)) \/ (i <= 0)) \/ (i >= 0))) /\ ((((((k <= 0) \/ (k >= 0)) \/ ~(m <= 1)) \/ (m >= 1)) \/ ~(i <= 0)) \/ ~(i >= 0))) /\ ((((((k <= 0) \/ (k >= 0)) \/ ~(m <= 1)) \/ (m >= 1)) \/ ~(i <= 0)) \/ (i >= 0))) /\ ((((((k <= 0) \/ (k >= 0)) \/ ~(m <= 1)) \/ (m >= 1)) \/ (i <= 0)) \/ ~(i >= 0))) /\ ((((((k <= 0) \/ (k >= 0)) \/ ~(m <= 1)) \/ (m >= 1)) \/ (i <= 0)) \/ (i >= 0))) /\ ((((((k <= 0) \/ (k >= 0)) \/ (m <= 1)) \/ ~(m >= 1)) \/ ~(i <= 0)) \/ ~(i >= 0))) /\ ((((((k <= 0) \/ (k >= 0)) \/ (m <= 1)) \/ ~(m >= 1)) \/ ~(i <= 0)) \/ (i >= 0))) /\ ((((((k <= 0) \/ (k >= 0)) \/ (m <= 1)) \/ ~(m >= 1)) \/ (i <= 0)) \/ ~(i >= 0))) /\ ((((((k <= 0) \/ (k >= 0)) \/ (m <= 1)) \/ ~(m >= 1)) \/ (i <= 0)) \/ (i >= 0))) /\ ((((((k <= 0) \/ (k >= 0)) \/ (m <= 1)) \/ (m >= 1)) \/ ~(i <= 0)) \/ ~(i >= 0))) /\ ((((((k <= 0) \/ (k >= 0)) \/ (m <= 1)) \/ (m >= 1)) \/ ~(i <= 0)) \/ (i >= 0))) /\ ((((((k <= 0) \/ (k >= 0)) \/ (m <= 1)) \/ (m >= 1)) \/ (i <= 0)) \/ ~(i >= 0))) /\ ((((((k <= 0) \/ (k >= 0)) \/ (m <= 1)) \/ (m >= 1)) \/ (i <= 0)) \/ (i >= 0))))
 //      """.stripMargin
 //    println(Simplify(exp))
-  }
-}
+
+
+//    val context:Expression =
+//      """
+//        |retval2 == 0 /\ n2 == 10 /\ a2 == 0 /\ i2 == 0
+//      """.stripMargin
+//
+//    var r = alpha(context, "(i2 >= 0)(i2 <= 0)")
+//    println(r)
+//
+//    println("----first iter--------------------------------------------------------------------")
+//    val q = ExistentialQuantifier(List(Variable("i3")),
+//                                   and(r, """two1 == i2 /\ add1 == (two1 + 1) /\ i3 == add1 /\ zero1 == i2 /\ one1 == n2 /\ cmp1 == (zero1 <= one1)"""))
+//
+//    println(q)
+//
+//
+//    var next = union(r, q, "(i3 >= 0)(i3 <= 0)")
+//
+//    println(next)
+//
+//    println("---next iter---------------------------------------------------------------------")
+//
+//    r = next
+//
+//    val q1 = ExistentialQuantifier(List(Variable("i3")),
+//                                    and(r, """two1 == i2 /\ add1 == (two1 + 1) /\ i3 == add1 /\ zero1 == i2 /\ one1 == n2 /\ cmp1 == (zero1 <= one1)"""))
+//
+//    println(q1)
+//
+//    next = union(r, q1, "(i3 >= 0)(i3 <= 0)")
+//    println(next)

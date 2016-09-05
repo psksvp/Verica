@@ -5,7 +5,7 @@ import psksvp.Verica.Z3.Validity
 /**
   * Created by psksvp on 13/05/2016.
   */
-package object PredicateAbstractionForSoftwareVerification extends com.typesafe.scalalogging.LazyLogging
+package object PredicateAbstraction extends com.typesafe.scalalogging.LazyLogging
 {
   import psksvp.Verica.Lang._
 
@@ -238,6 +238,9 @@ package object PredicateAbstractionForSoftwareVerification extends com.typesafe.
         val a  = Assume(and(e, i,  j))
         bp = traverse(Sequence(c, h, a), b)
         val q  = norm(True(), Sequence(c, h, a, bp))
+//        //no havac uncomment below
+//        bp = traverse(Sequence(c, a), b)
+//        val q  = norm(True(), Sequence(c, a, bp))
         val next = union(r, q, p)
         println("next is"  + next)
         println("   r is"  + r)

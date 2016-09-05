@@ -62,8 +62,7 @@ package object psksvp
     val srcFileName = s"$tmpDir${psksvp.gensym()}.py"
     SimpleFileIO.writeStringToTextFile(src, srcFileName)
     import sys.process._
-    //val code = src.replaceAll("\n", ";").replaceAll(";;", ";").trim
-    //(Seq(python.trim, "-c", code).!!).trim
+
     (Seq(python, srcFileName).!!).trim
   }
 
