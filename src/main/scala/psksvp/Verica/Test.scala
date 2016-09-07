@@ -321,168 +321,146 @@ object Test
     //testAnotherTrace
     //hardCode
 
-    //hardCode2
+    hardCode2
 
     //val t:Expression = "And(p1, Or(p2, ~p3))"
     //println(t)
 
-    val t:Expression = """true /\ (p1 \/ ~p2) /\ (p1 \/ p2)"""
-    println(SymPy.symplify(t))
+    //val t:Expression = """true /\ (p1 \/ ~p2) /\ (p1 \/ p2)"""
+    //println(SymPy.symplify(t))
   }
 
   def hardCode2:Unit=
   {
-    val contextStr =
-    """
-      |(= %retval@2 0 )
-      |(= %n@2 10 )
-      |(= %a@2 0 )
-      |(= %i@2 0 )
-      |(= %j@2 0 )
-    """.stripMargin
-
-    val guardStr =
-      """
-        |(= %0@1 %i@2 )
-        |(= %1@1 %n@2 )
-        |(= %cmp@1 (<= %0@1 %1@1 ) )
-        |(= True %cmp@1)
-      """.stripMargin
-
-    val bodyStr =
-      """
-        |(= %add@1 (+ %2@1 1 ) )
-        |(= %i@3 %add@1 )
-        |(= %3@1 %j@2 )
-        |(= %sub@1 (- %3@1 1 ) )
-        |(= %j@3 %sub@1 )
-      """.stripMargin
-
-
     val context:Expression = """retval2 == 0 /\ n2 == 10 /\ a2 == 0 /\ i2 == 0  /\ j2 == 0"""
     val r = alpha(context, "(i2 >= 0)(i2 <= 0)(j2 >= 0)(j2 <= 0)")
     println("-------------------------------------------")
     println(r)
+    println(gamma(r, "(i2 >= 0)(i2 <= 0)(j2 >= 0)(j2 <= 0)"))
+    println(abstractDomain2BooleanExpression(r))
+    val sim = SymPy.symplify(r)
+    println(sim)
+    println(booleanExpression2PredicateExpression(sim, "(i2 >= 0)(i2 <= 0)(j2 >= 0)(j2 <= 0)"))
     println("-------------------------------------------")
 
-    val decl:Statement = "local cmp1:Boolean"
-    val guardAndBody:Expression =
-      """
-        |zero1 == i2 /\
-        |one1 == n2 /\
-        |cmp1 == (zero1 <= one1) /\
-        |true == cmp1 /\
-        |two1 == i2 /\
-        |add1 == (two1 + 1) /\
-        |i3 == add1 /\
-        |three1 == j2 /\
-        |sub1 == (three1 - 1) /\
-        |j3 == sub1
-      """.stripMargin
-
-    val q = QE.solve(Exists(List(Variable("i2"), Variable("j2"))), SuchThat(and(guardAndBody, r)))
-    println("-------------------------------------------")
-    println(q)
-    println("-------------------------------------------")
-
-    val qPrime:Expression =
-      """
-        |((one1 = n2) /\ ((cmp1 = (zero1 <= one1)) /\ (cmp1 = true /\ ((add1 = (1 + two1)) /\ ((i3 = add1) /\ ((sub1 = (-1 + three1)) /\ ((j3 = sub1) /\ (((two1 + (-1 * zero1)) <= 0) /\ (((zero1 + (-1 * two1)) <= 0) /\ (((zero1 <= -1) \/ ((zero1 >= 1) \/ ((three1 <= -1) \/ (three1 <= 0)))) /\ (((zero1 <= -1) \/ ((zero1 >= 1) \/ ((three1 >= 0) \/ (three1 >= 1)))) /\ (((zero1 <= -1) \/ ((zero1 >= 1) \/ ((three1 >= 0) \/ (three1 <= 0)))) /\ (((zero1 <= -1) \/ ((zero1 <= 0) \/ ((three1 <= -1) \/ (three1 >= 1)))) /\ (((zero1 <= -1) \/ ((zero1 <= 0) \/ ((three1 <= -1) \/ (three1 <= 0)))) /\ (((zero1 <= -1) \/ ((zero1 <= 0) \/ ((three1 >= 0) \/ (three1 >= 1)))) /\ (((zero1 <= -1) \/ ((zero1 <= 0) \/ ((three1 >= 0) \/ (three1 <= 0)))) /\ (((zero1 >= 0) \/ ((zero1 >= 1) \/ ((three1 <= -1) \/ (three1 >= 1)))) /\ (((zero1 >= 0) \/ ((zero1 >= 1) \/ ((three1 <= -1) \/ (three1 <= 0)))) /\ (((zero1 >= 0) \/ ((zero1 >= 1) \/ ((three1 >= 0) \/ (three1 >= 1)))) /\ (((zero1 >= 0) \/ ((zero1 >= 1) \/ ((three1 >= 0) \/ (three1 <= 0)))) /\ (((zero1 >= 0) \/ ((zero1 <= 0) \/ ((three1 <= -1) \/ (three1 >= 1)))) /\ (((zero1 >= 0) \/ ((zero1 <= 0) \/ ((three1 <= -1) \/ (three1 <= 0)))) /\ (((zero1 >= 0) \/ ((zero1 <= 0) \/ ((three1 >= 0) \/ (three1 >= 1)))) /\ ((zero1 >= 0) \/ ((zero1 <= 0) \/ ((three1 >= 0) \/ (three1 <= 0)))))))))))))))))))))))))))
-      """.stripMargin
-
-    var rPrime:Expression =
-      """
-        |(((((((((((((((true /\ (((~(i3 >= 0) \/ ~(i3 <= 0)) \/ ~(j3 >= 0)) \/ (j3 <= 0))) /\ (((~(i3 >= 0) \/ ~(i3 <= 0)) \/ (j3 >= 0)) \/ ~(j3 <= 0))) /\ (((~(i3 >= 0) \/ ~(i3 <= 0)) \/ (j3 >= 0)) \/ (j3 <= 0))) /\ (((~(i3 >= 0) \/ (i3 <= 0)) \/ ~(j3 >= 0)) \/ ~(j3 <= 0))) /\ (((~(i3 >= 0) \/ (i3 <= 0)) \/ ~(j3 >= 0)) \/ (j3 <= 0))) /\ (((~(i3 >= 0) \/ (i3 <= 0)) \/ (j3 >= 0)) \/ ~(j3 <= 0))) /\ (((~(i3 >= 0) \/ (i3 <= 0)) \/ (j3 >= 0)) \/ (j3 <= 0))) /\ ((((i3 >= 0) \/ ~(i3 <= 0)) \/ ~(j3 >= 0)) \/ ~(j3 <= 0))) /\ ((((i3 >= 0) \/ ~(i3 <= 0)) \/ ~(j3 >= 0)) \/ (j3 <= 0))) /\ ((((i3 >= 0) \/ ~(i3 <= 0)) \/ (j3 >= 0)) \/ ~(j3 <= 0))) /\ ((((i3 >= 0) \/ ~(i3 <= 0)) \/ (j3 >= 0)) \/ (j3 <= 0))) /\ ((((i3 >= 0) \/ (i3 <= 0)) \/ ~(j3 >= 0)) \/ ~(j3 <= 0))) /\ ((((i3 >= 0) \/ (i3 <= 0)) \/ ~(j3 >= 0)) \/ (j3 <= 0))) /\ ((((i3 >= 0) \/ (i3 <= 0)) \/ (j3 >= 0)) \/ ~(j3 <= 0))) /\ ((((i3 >= 0) \/ (i3 <= 0)) \/ (j3 >= 0)) \/ (j3 <= 0)))
-      """.stripMargin
-
-    var next = union(rPrime, q, "(i3 >= 0)(i3 <= 0)(j3 >= 0)(j3 <= 0)")
-    while(rPrime != next)
-    {
-      rPrime = next
-      next = union(rPrime, q, "(i3 >= 0)(i3 <= 0)(j3 >= 0)(j3 <= 0)")
-    }
-
-    println("-------------------------------------------")
-    println(next)
+//    val decl:Statement = "local cmp1:Boolean"
+//    val guardAndBody:Expression =
+//      """
+//        |zero1 == i2 /\
+//        |one1 == n2 /\
+//        |cmp1 == (zero1 <= one1) /\
+//        |true == cmp1 /\
+//        |two1 == i2 /\
+//        |add1 == (two1 + 1) /\
+//        |i3 == add1 /\
+//        |three1 == j2 /\
+//        |sub1 == (three1 - 1) /\
+//        |j3 == sub1
+//      """.stripMargin
+//
+//    val q = QE.solve(Exists(List(Variable("i2"), Variable("j2"))), SuchThat(and(guardAndBody, r)))
+//    println("-------------------------------------------")
+//    println(q)
+//    println("-------------------------------------------")
+//
+//    val qPrime:Expression =
+//      """
+//        |((one1 = n2) /\ ((cmp1 = (zero1 <= one1)) /\ (cmp1 = true /\ ((add1 = (1 + two1)) /\ ((i3 = add1) /\ ((sub1 = (-1 + three1)) /\ ((j3 = sub1) /\ (((two1 + (-1 * zero1)) <= 0) /\ (((zero1 + (-1 * two1)) <= 0) /\ (((zero1 <= -1) \/ ((zero1 >= 1) \/ ((three1 <= -1) \/ (three1 <= 0)))) /\ (((zero1 <= -1) \/ ((zero1 >= 1) \/ ((three1 >= 0) \/ (three1 >= 1)))) /\ (((zero1 <= -1) \/ ((zero1 >= 1) \/ ((three1 >= 0) \/ (three1 <= 0)))) /\ (((zero1 <= -1) \/ ((zero1 <= 0) \/ ((three1 <= -1) \/ (three1 >= 1)))) /\ (((zero1 <= -1) \/ ((zero1 <= 0) \/ ((three1 <= -1) \/ (three1 <= 0)))) /\ (((zero1 <= -1) \/ ((zero1 <= 0) \/ ((three1 >= 0) \/ (three1 >= 1)))) /\ (((zero1 <= -1) \/ ((zero1 <= 0) \/ ((three1 >= 0) \/ (three1 <= 0)))) /\ (((zero1 >= 0) \/ ((zero1 >= 1) \/ ((three1 <= -1) \/ (three1 >= 1)))) /\ (((zero1 >= 0) \/ ((zero1 >= 1) \/ ((three1 <= -1) \/ (three1 <= 0)))) /\ (((zero1 >= 0) \/ ((zero1 >= 1) \/ ((three1 >= 0) \/ (three1 >= 1)))) /\ (((zero1 >= 0) \/ ((zero1 >= 1) \/ ((three1 >= 0) \/ (three1 <= 0)))) /\ (((zero1 >= 0) \/ ((zero1 <= 0) \/ ((three1 <= -1) \/ (three1 >= 1)))) /\ (((zero1 >= 0) \/ ((zero1 <= 0) \/ ((three1 <= -1) \/ (three1 <= 0)))) /\ (((zero1 >= 0) \/ ((zero1 <= 0) \/ ((three1 >= 0) \/ (three1 >= 1)))) /\ ((zero1 >= 0) \/ ((zero1 <= 0) \/ ((three1 >= 0) \/ (three1 <= 0)))))))))))))))))))))))))))
+//      """.stripMargin
+//
+//    var rPrime:Expression =
+//      """
+//        |(((((((((((((((true /\ (((~(i3 >= 0) \/ ~(i3 <= 0)) \/ ~(j3 >= 0)) \/ (j3 <= 0))) /\ (((~(i3 >= 0) \/ ~(i3 <= 0)) \/ (j3 >= 0)) \/ ~(j3 <= 0))) /\ (((~(i3 >= 0) \/ ~(i3 <= 0)) \/ (j3 >= 0)) \/ (j3 <= 0))) /\ (((~(i3 >= 0) \/ (i3 <= 0)) \/ ~(j3 >= 0)) \/ ~(j3 <= 0))) /\ (((~(i3 >= 0) \/ (i3 <= 0)) \/ ~(j3 >= 0)) \/ (j3 <= 0))) /\ (((~(i3 >= 0) \/ (i3 <= 0)) \/ (j3 >= 0)) \/ ~(j3 <= 0))) /\ (((~(i3 >= 0) \/ (i3 <= 0)) \/ (j3 >= 0)) \/ (j3 <= 0))) /\ ((((i3 >= 0) \/ ~(i3 <= 0)) \/ ~(j3 >= 0)) \/ ~(j3 <= 0))) /\ ((((i3 >= 0) \/ ~(i3 <= 0)) \/ ~(j3 >= 0)) \/ (j3 <= 0))) /\ ((((i3 >= 0) \/ ~(i3 <= 0)) \/ (j3 >= 0)) \/ ~(j3 <= 0))) /\ ((((i3 >= 0) \/ ~(i3 <= 0)) \/ (j3 >= 0)) \/ (j3 <= 0))) /\ ((((i3 >= 0) \/ (i3 <= 0)) \/ ~(j3 >= 0)) \/ ~(j3 <= 0))) /\ ((((i3 >= 0) \/ (i3 <= 0)) \/ ~(j3 >= 0)) \/ (j3 <= 0))) /\ ((((i3 >= 0) \/ (i3 <= 0)) \/ (j3 >= 0)) \/ ~(j3 <= 0))) /\ ((((i3 >= 0) \/ (i3 <= 0)) \/ (j3 >= 0)) \/ (j3 <= 0)))
+//      """.stripMargin
+//
+//    var next = union(rPrime, q, "(i3 >= 0)(i3 <= 0)(j3 >= 0)(j3 <= 0)")
+//    while(rPrime != next)
+//    {
+//      rPrime = next
+//      next = union(rPrime, q, "(i3 >= 0)(i3 <= 0)(j3 >= 0)(j3 <= 0)")
+//    }
+//
+//    println("-------------------------------------------")
+//    println(next)
   }
-
-  ////////////////////////////////////////////////////////////////////
-  def hardCode:Unit=
-  {
-    println("--------------------------------------------")
-
-    val context:Expression =
-          """
-            |retval2 == 0 /\ n2 == 10 /\ a2 == 0 /\ i2 == 0
-          """.stripMargin
-
-    var r = alpha(context, "(i2 >= 0)(i2 <= 0)")
-    //val r = and("i2 >= 0", "i2 <= 0")
-    //val r:Expression = "i2 == 0"
-    println(r)
-
-    val decl:Statement = "local cmp1:Boolean"
-
-    val guardAndBody:Expression =
-     """
-        |zero1 == i2 /\
-        |one1 == n2 /\
-        |cmp1 == (zero1 <= one1) /\
-        |true == cmp1 /\
-        |two1 == i2 /\
-        |add1 == (two1 + 1) /\
-        |i3 == add1
-      """.stripMargin
-
-    val varsLastIndexInTerm = List(Variable("i3"),
-                                   Variable("zero1"),
-                                   Variable("one1"),
-                                   Variable("n2"),
-                                   Variable("cmp1"),
-                                   Variable("two1"),
-                                   Variable("add1"))
-
-    val diff = vars(guardAndBody).toSet diff varsLastIndexInTerm.toSet
-
-    println(diff)
-
-    val m = QE.solve(Exists(diff.toSeq), SuchThat(and(guardAndBody, r)))  // use r because i2 is index 2 is entry point index of i
-    println("m is :" + m)
-
-    println("-------------------------------")
-
-    val mHash:Expression = """one == n /\ cmp == (zero <= one) /\ true == cmp /\ add == 1 + two /\ i == add /\ zero <= 0 /\ zero >= 0 /\ two <= 0 /\ two >= 0"""
-
-    //rename r to rHash (((true /\ (~(i2 >= 0) \/ (i2 <= 0))) /\ ((i2 >= 0) \/ ~(i2 <= 0))) /\ ((i2 >= 0) \/ (i2 <= 0)))
-    //var rHash:Expression = """(((true /\ (~(i >= 0) \/ (i <= 0))) /\ ((i >= 0) \/ ~(i <= 0))) /\ ((i >= 0) \/ (i <= 0)))"""
-    //var rHash:Expression = "i == 0"
-    //var rHash:Expression = """(i >= 0) /\ (i <= 0)"""
-    var rHash:Expression = """(((true /\ (~(i >= 0) \/ (i <= 0))) /\ ((i >= 0) \/ ~(i <= 0))) /\ ((i >= 0) \/ (i <= 0)))"""
-    //rename context
-    var contextHash:Expression =
-      """
-        |retval == 0 /\ n == 10 /\ a == 0 /\ i == 0
-      """.stripMargin
-
-    println("-----------------------------------------------------------")
-    val q = mHash //and(contextHash, rHash, mHash)
-    var next = union(rHash, q, "(i >= 0)(i <= 0)")
-
-    println("next: " + next)
-    println("rHash:" + rHash)
-    println(rHash == next)
-
-    rHash = next
-
-    println("-----------------------------------------------------------")
-    //q = and(contextHash, rHash, mHash)
-    next = union(rHash, q, "(i >= 0)(i <= 0)")
-
-    println("next: " + next)
-    println("rHash:" + rHash)
-    println(rHash == next)
-
-  }
+//
+//  ////////////////////////////////////////////////////////////////////
+//  def hardCode:Unit=
+//  {
+//    println("--------------------------------------------")
+//
+//    val context:Expression =
+//          """
+//            |retval2 == 0 /\ n2 == 10 /\ a2 == 0 /\ i2 == 0
+//          """.stripMargin
+//
+//    var r = alpha(context, "(i2 >= 0)(i2 <= 0)")
+//    //val r = and("i2 >= 0", "i2 <= 0")
+//    //val r:Expression = "i2 == 0"
+//    println(r)
+//
+//    val decl:Statement = "local cmp1:Boolean"
+//
+//    val guardAndBody:Expression =
+//     """
+//        |zero1 == i2 /\
+//        |one1 == n2 /\
+//        |cmp1 == (zero1 <= one1) /\
+//        |true == cmp1 /\
+//        |two1 == i2 /\
+//        |add1 == (two1 + 1) /\
+//        |i3 == add1
+//      """.stripMargin
+//
+//    val varsLastIndexInTerm = List(Variable("i3"),
+//                                   Variable("zero1"),
+//                                   Variable("one1"),
+//                                   Variable("n2"),
+//                                   Variable("cmp1"),
+//                                   Variable("two1"),
+//                                   Variable("add1"))
+//
+//    val diff = vars(guardAndBody).toSet diff varsLastIndexInTerm.toSet
+//
+//    println(diff)
+//
+//    val m = QE.solve(Exists(diff.toSeq), SuchThat(and(guardAndBody, r)))  // use r because i2 is index 2 is entry point index of i
+//    println("m is :" + m)
+//
+//    println("-------------------------------")
+//
+//    val mHash:Expression = """one == n /\ cmp == (zero <= one) /\ true == cmp /\ add == 1 + two /\ i == add /\ zero <= 0 /\ zero >= 0 /\ two <= 0 /\ two >= 0"""
+//
+//    //rename r to rHash (((true /\ (~(i2 >= 0) \/ (i2 <= 0))) /\ ((i2 >= 0) \/ ~(i2 <= 0))) /\ ((i2 >= 0) \/ (i2 <= 0)))
+//    //var rHash:Expression = """(((true /\ (~(i >= 0) \/ (i <= 0))) /\ ((i >= 0) \/ ~(i <= 0))) /\ ((i >= 0) \/ (i <= 0)))"""
+//    //var rHash:Expression = "i == 0"
+//    //var rHash:Expression = """(i >= 0) /\ (i <= 0)"""
+//    var rHash:Expression = """(((true /\ (~(i >= 0) \/ (i <= 0))) /\ ((i >= 0) \/ ~(i <= 0))) /\ ((i >= 0) \/ (i <= 0)))"""
+//    //rename context
+//    var contextHash:Expression =
+//      """
+//        |retval == 0 /\ n == 10 /\ a == 0 /\ i == 0
+//      """.stripMargin
+//
+//    println("-----------------------------------------------------------")
+//    val q = mHash //and(contextHash, rHash, mHash)
+//    var next = union(rHash, q, "(i >= 0)(i <= 0)")
+//
+//    println("next: " + next)
+//    println("rHash:" + rHash)
+//    println(rHash == next)
+//
+//    rHash = next
+//
+//    println("-----------------------------------------------------------")
+//    //q = and(contextHash, rHash, mHash)
+//    next = union(rHash, q, "(i >= 0)(i <= 0)")
+//
+//    println("next: " + next)
+//    println("rHash:" + rHash)
+//    println(rHash == next)
+//
+//  }
 }
 
 

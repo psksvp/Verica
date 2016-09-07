@@ -9,7 +9,7 @@ package object PredicateAbstraction extends com.typesafe.scalalogging.LazyLoggin
 {
   import psksvp.Verica.Lang._
 
-  type AbstractDomain = Expression
+  type AbstractDomain = List[Vector[Boolean]]
 
   /**
     *
@@ -212,8 +212,6 @@ package object PredicateAbstraction extends com.typesafe.scalalogging.LazyLoggin
 
 
 
-
-
   /**
     *
     * @param c context: statements before statement s (while statement)
@@ -234,14 +232,14 @@ package object PredicateAbstraction extends com.typesafe.scalalogging.LazyLoggin
       var iteration = 0
       do
       {
-        j  = gamma(r)
+        j  = gamma(r, p)
         val a  = Assume(and(e, i,  j))
         bp = traverse(Sequence(c, h, a), b)
         val q  = norm(True(), Sequence(c, h, a, bp))
 //        //no havac uncomment below
 //        bp = traverse(Sequence(c, a), b)
 //        val q  = norm(True(), Sequence(c, a, bp))
-        val next = union(r, q, p)
+        val next = union(j, q, p)  //
         println("next is"  + next)
         println("   r is"  + r)
         if(r != next)
@@ -270,7 +268,16 @@ package object PredicateAbstraction extends com.typesafe.scalalogging.LazyLoggin
     * @param absDomain
     * @return
     */
-  def gamma(absDomain:AbstractDomain):Expression = absDomain
+  def gamma(absDomain:AbstractDomain, p:Predicates):Expression =
+  {
+    var exp:Expression = True()
+    for(v <- absDomain)
+    {
+      exp = and(exp, booleanVector2PredicateExpression(v, p))
+    }
+
+    exp
+  }
 
   /**
     *
@@ -279,76 +286,106 @@ package object PredicateAbstraction extends com.typesafe.scalalogging.LazyLoggin
     * @param predicates
     * @return
     */
-  def union(r:AbstractDomain, q:Expression, predicates: Predicates):AbstractDomain =
+  def union(r:Expression, q:Expression, predicates: Predicates):AbstractDomain =
   {
-    def makeExpression(b:Vector[Boolean], p:Predicates):Expression =
-    {
-      require(b.size == p.count, "unionX makeExpression, size of b != p.count")
-      var expr:Expression = if(b(0)) p(0) else not(p(0))
-      for(i <- 1 until p.count)
-      {
-        expr = or(expr, if(b(i)) p(i) else not(p(i)))
-      }
-      expr
-    }
-
-    var result:Expression = True()
+    var absDomain:List[Vector[Boolean]] = Nil
+    //var result:Expression = True()
     val combinationSize = scala.math.pow(2, predicates.count).toInt  // TODO: can have overflow problem
     for(i <- 0 until combinationSize)
     {
       val combination = psksvp.booleanVector(i, predicates.count)
-      val m = makeExpression(combination, predicates)
+      val m = booleanVector2PredicateExpression(combination, predicates)
       val qExpr = implies(q, m)
       val rExpr = implies(r, m)
       val expr = and(rExpr, qExpr)
 
       if (True() == Z3.Validity.check(expr))
       {
-        result = and(result, m)
+        //result = and(result, m)
+        if(Nil != absDomain)
+          absDomain = absDomain ::: List(combination)
+        else
+          absDomain = List(combination)
         println("union check rtn  True(): " + expr)
       }
       else
         println("union check rtn False(): " + expr)
+    }
+    //result
+    absDomain
+  }
+
+  /**
+    *
+    * @param a
+    * @return
+    */
+  implicit def abstractDomain2BooleanExpression(a:AbstractDomain):Expression =
+  {
+    def booleanVector2BooleanExpression(c:Vector[Boolean]):Expression =
+    {
+      def makeVar(b:Boolean, idx:Int):Expression =
+      {
+        val v = Variable(s"p$idx", List(idx.toString))
+        if(b) v else not(v)
+      }
+
+      var result:Expression = True()
+      var index = 0
+      for(b <- c)
+      {
+        if(0 == index)
+          result = makeVar(b, index)
+        else
+          result = or(result, makeVar(b, index))
+
+        index = index + 1
+      }
+      result
+    }
+
+    ///////////////////////////////
+    var result:Expression = True()
+    for(v <- a)
+    {
+      if(True() == result)
+        result = booleanVector2BooleanExpression(v)
+      else
+        result = and(result, booleanVector2BooleanExpression(v))
     }
     result
   }
 
   /**
     *
-    * @param targets
-    * @param oldValue
+    * @param boolExp
+    * @param p
     * @return
     */
-  def predicateCombinations(targets:List[Variable], oldValue:Map[Variable, Expression]):List[List[Expression]] =
+  def booleanExpression2PredicateExpression(boolExp:Expression, p:Predicates):Expression =
   {
-    /**
-      *
-      * @param v
-      * @param lsOP
-      * @return
-      */
-    def makePredicates(v:Variable, lsOP:List[String] = List("<","<=",">",">=","==","!=")):List[Expression]=lsOP match
+    var s = boolExp.toString
+    for(idx <- 0 until p.count)
     {
-      case Nil         => Nil
-      case op :: rest  => List[Expression](s"$v $op ${oldValue(v)}") ::: makePredicates(v, rest)
+      s = s.replaceAll(s"p$idx", p(idx).toString)
     }
+    s
+  }
 
-    /**
-      *
-      * @param tls
-      * @return
-      */
-    def targetPredicates(tls:List[Variable]):List[List[Expression]]=tls match
+  /**
+    *
+    * @param b
+    * @param p
+    * @return
+    */
+  def booleanVector2PredicateExpression(b:Vector[Boolean], p:Predicates):Expression =
+  {
+    require(b.size == p.count, "unionX makeExpression, size of b != p.count")
+    var expr:Expression = if(b(0)) p(0) else not(p(0))
+    for(i <- 1 until p.count)
     {
-      case Nil       => Nil
-      case v :: rest => List(makePredicates(v)) ::: targetPredicates(rest)
+      expr = or(expr, if(b(i)) p(i) else not(p(i)))
     }
-
-
-    ////////////////////
-    val tp = targetPredicates(targets)
-    val mk = psksvp.crossProduct(tp)
-
-    mk
+    expr
   }
 }
