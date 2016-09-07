@@ -14,7 +14,7 @@ object Validity extends com.typesafe.scalalogging.LazyLogging
   def check(expr:Expression, assumptions:List[Expression] = Nil):Expression =
   {
     val pyExpr = pythonize(expr)
-    val vars = makeIntVariables(expr)
+    val vars = makeVariables(expr)
     val solver = psksvp.gensym()
     val code =
       s"""

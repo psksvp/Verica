@@ -13,7 +13,7 @@ object Satisfiable
   def check(expr:Expression, assumptions:List[Expression] = Nil):Expression =
   {
     val pyExpr = pythonize(expr)
-    val vars = makeIntVariables(expr)
+    val vars = makeVariables(expr)
     val code =
       s"""
          |from z3 import *

@@ -10,7 +10,7 @@ object Simplify
   def apply(exp:Expression):Expression =
   {
     val pyExpCode = pythonize(exp)
-    val varDecl = makeIntVariables(exp)
+    val varDecl = makeVariables(exp)
 
     val code =
       s"""

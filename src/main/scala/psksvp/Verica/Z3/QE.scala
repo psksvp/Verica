@@ -45,10 +45,10 @@ object QE
 
   private def makeZ3Python(quantifier: Quantifier, suchThat: SuchThat):String=
   {
-    // here I assume that every variable is an Interger (Ints)
-    // z3py has Real, Reals, Int, Ints, Bool, Bools
-    val varDecl = Z3.makeIntVariables(suchThat.expression) + ";" +
-      Z3.makeIntVariables(quantifier.allVariables)
+    // here I assume that every variables are Interger (Ints)
+    // but z3py has Real, Reals, Int, Ints, Bool, Bools
+    val varDecl = Z3.makeVariables(suchThat.expression) + "\n" +
+                  Z3.makeVariables(quantifier.allVariables)
     val qfType = quantifier match
     {
       case e:Exists => "Exists(" + e.toString + "," + Z3.pythonize(suchThat.expression) + ")"

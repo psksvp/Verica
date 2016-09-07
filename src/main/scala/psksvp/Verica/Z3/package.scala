@@ -17,7 +17,7 @@ package object Z3
   {
     case Binary(Or(), l, r)          => "Or(" + pythonize(l) + "," + pythonize(r) + ")"
     case Binary(And(), l, r)         => "And(" + pythonize(l) + "," + pythonize(r) + ")"
-    case Binary(Equal(), l, r)       =>  pythonize(l) + "==" + pythonize(r)
+    case Binary(Equal(), l, r)       =>  "(" + pythonize(l) + ")" + "==" + "(" + pythonize(r) + ")"
     case Binary(Implies(), l, r)     => "Implies(" + pythonize(l) + "," + pythonize(r) + ")"
     case Binary(op, l, r)            => pythonize(l) + op.symbol + pythonize(r)
     case Unary(Negation(), l)        => "Not(" + pythonize(l) + ")"
@@ -35,6 +35,20 @@ package object Z3
   }
 
 
+  def makeVariable(v:Variable):String =
+  {
+    Register.lookup(v) match
+    {
+      case Some(varDecl) => varDecl.typeClass match
+                            {
+                              case IntegerType() => makeIntVariable(v)
+                              case BooleanType() => makeBoolVariable(v)
+                            }
+      case _             => //println(s"z3 default variable ${v.name} to Int")
+                            makeIntVariable(v)
+    }
+  }
+
   /**
     *
     * @param v
@@ -46,26 +60,36 @@ package object Z3
     case Variable(n, _, ArrayVariable())   => s"$n = Array('$n', IntSort(), IntSort())"
   }
 
+  /**
+    *
+    * @param v
+    * @return
+    */
+  def makeBoolVariable(v:Variable):String = v match
+  {
+    case Variable(n, Nil, ValueVariable()) => s"$n = Bool('$n')"
+    case Variable(n, _, ArrayVariable())   => s"$n = Array('$n', Bool(), Bool())"
+  }
 
   /**
     *
     * @param s
     * @return
     */
-  def makeIntVariables(s:Seq[Variable]):String =
+  def makeVariables(s:Seq[Variable]):String =
   {
     var decl = ""
     for(v <- s)
     {
-      decl = decl + makeIntVariable(v) + "\n"
+      decl = decl + makeVariable(v) + "\n"
     }
     decl.trim
   }
-  def makeIntVariables(expr:Expression):String =
+  def makeVariables(expr:Expression):String =
   {
     var result = ""
     for(v <- psksvp.removeDuplicate(listOfVariablesIn(expr)))
-      result = result.concat(makeIntVariable(v) + "\n")
+      result = result.concat(makeVariable(v) + "\n")
 
     result.trim
   }
@@ -80,8 +104,8 @@ package object Z3
   {
     expr match
     {
-      case UniversalQuantifier(v, e) => makeIntVariables(v) + "\n" +
-                                        makeIntVariables(e) + "\n" +
+      case UniversalQuantifier(v, e) => makeVariables(v) + "\n" +
+                                        makeVariables(e) + "\n" +
                                         s"$modelName.add(${pythonize(expr)})\n"
       case _                         => s"$modelName.add(${pythonize(expr)})\n"
     }

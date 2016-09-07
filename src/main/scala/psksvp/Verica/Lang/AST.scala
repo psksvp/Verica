@@ -2,6 +2,24 @@ package psksvp.Verica.Lang
 
 
 /**
+  * it is a hack. not a good solution.
+  */
+object Register
+{
+  private val variableDeclarationReg = new scala.collection.mutable.HashMap[String, VariableDeclaration]
+
+  def register(varDecl:VariableDeclaration):Unit = variableDeclarationReg(varDecl.name) = varDecl
+  def lookup(v:Variable):Option[VariableDeclaration] =
+  {
+    if(variableDeclarationReg.isDefinedAt(v.name))
+      Some(variableDeclarationReg(v.name))
+    else
+      None
+  }
+  def clearAll():Unit = variableDeclarationReg.clear()
+}
+
+/**
   * Created by psksvp on 11/04/2016.
   */
 abstract class Node(_children:List[Node])

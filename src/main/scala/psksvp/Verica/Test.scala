@@ -264,6 +264,9 @@ object Test
         |function aFunc(n:Integer):Integer
         |[assume(n > 0), ensure(i > 0)]
         |{
+        |  local i:Integer
+        |  local two:Integer
+        |  local add:Integer
         |  i := 0
         |  while(i <= n, [(i >= 0)(i <= 0),true])
         |  {
@@ -288,8 +291,12 @@ object Test
     //testInferWithArray
     //testVerifyFindMax
 
-    testInferOnTrace
+    //testInferOnTrace
+    hardCode
+  }
 
+  def hardCode:Unit=
+  {
     println("--------------------------------------------")
 
     val context:Expression =
@@ -297,15 +304,19 @@ object Test
             |retval2 == 0 /\ n2 == 10 /\ a2 == 0 /\ i2 == 0
           """.stripMargin
 
-    var r = alpha(context, "(i2 >= 0)(i2 <= 0)")
+    //var r = alpha(context, "(i2 >= 0)(i2 <= 0)")
+    val r = and("i2 >= 0", "i2 <= 0")
+    //val r:Expression = "i2 == 0"
     println(r)
 
+    val decl:Statement = "local cmp1:Boolean"
 
     val guardAndBody:Expression =
-      """
+     """
         |zero1 == i2 /\
         |one1 == n2 /\
         |cmp1 == (zero1 <= one1) /\
+        |true == cmp1 /\
         |two1 == i2 /\
         |add1 == (two1 + 1) /\
         |i3 == add1
@@ -326,14 +337,14 @@ object Test
     val m = QE.solve(Exists(diff.toSeq), SuchThat(and(guardAndBody, r)))  // use r because i2 is index 2 is entry point index of i
     println("m is :" + m)
 
-    //rename m to mHash ((one1 = n2) /\ ((zero1 <= one1) /\ ((add1 = (1 + two1)) /\ ((i3 = add1) /\ (((two1 + (-1 * zero1)) <= 0) /\ (((zero1 + (-1 * two1)) <= 0) /\ (((zero1 <= -1) \/ (zero1 <= 0)) /\ (((zero1 >= 0) \/ (zero1 >= 1)) /\ ((zero1 >= 0) \/ (zero1 <= 0))))))))))
-    val mHash:Expression =
-      """
-        |((one = n) /\ ((zero <= one) /\ ((add = (1 + two)) /\ ((i = add) /\ (((two + (-1 * zero)) <= 0) /\ (((zero + (-1 * two)) <= 0) /\ (((zero <= -1) \/ (zero <= 0)) /\ (((zero >= 0) \/ (zero >= 1)) /\ ((zero >= 0) \/ (zero <= 0))))))))))
-      """.stripMargin
+    println("-------------------------------")
+
+    val mHash:Expression = """one == n /\ cmp == (zero <= one) /\ true == cmp /\ add == 1 + two /\ i == add /\ zero <= 0 /\ zero >= 0 /\ two <= 0 /\ two >= 0"""
 
     //rename r to rHash (((true /\ (~(i2 >= 0) \/ (i2 <= 0))) /\ ((i2 >= 0) \/ ~(i2 <= 0))) /\ ((i2 >= 0) \/ (i2 <= 0)))
-    var rHash:Expression = """(((true /\ (~(i >= 0) \/ (i <= 0))) /\ ((i >= 0) \/ ~(i <= 0))) /\ ((i >= 0) \/ (i <= 0)))"""
+    //var rHash:Expression = """(((true /\ (~(i >= 0) \/ (i <= 0))) /\ ((i >= 0) \/ ~(i <= 0))) /\ ((i >= 0) \/ (i <= 0)))"""
+    //var rHash:Expression = "i == 0"
+    var rHash:Expression = """(i >= 0) /\ (i <= 0)"""
 
     //rename context
     var contextHash:Expression =
@@ -342,7 +353,7 @@ object Test
       """.stripMargin
 
     println("-----------------------------------------------------------")
-    var q = mHash //and(contextHash, rHash, mHash)
+    val q = mHash //and(contextHash, rHash, mHash)
     var next = union(rHash, q, "(i >= 0)(i <= 0)")
 
     println("next: " + next)
