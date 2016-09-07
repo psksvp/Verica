@@ -15,7 +15,7 @@ abstract class Quantifier(vars:Seq[Variable])
     if(1 == vars.size)
       vars(0).name
     else
-      "[" + Prettified.pretty(allVariables.toList, " ") + "]"
+      "[" + Prettified.pretty(allVariables.toList) + "]"
   }
 }
 
