@@ -65,12 +65,11 @@ package object PredicateAbstraction extends com.typesafe.scalalogging.LazyLoggin
     */
   def desugar(w:While):Sequence = w match
   {
-    case While(_, i, e, b) =>
-      Sequence(Assert(i),
-               havoc(targets(b)),
-               Assume(i),
-               Choice(Sequence(Assume(e), b, Assert(i), Assume(False())),
-                      Assume(not(e))))
+    case While(_, i, e, b) => Sequence(Assert(i),
+                                       havoc(targets(b)),
+                                       Assume(i),
+                                       Choice(Sequence(Assume(e), b, Assert(i), Assume(False())),
+                                              Assume(not(e))))
   }
 
   /**
@@ -155,7 +154,7 @@ package object PredicateAbstraction extends com.typesafe.scalalogging.LazyLoggin
     case Sequence(a)               => traverse(c, a)
     case Sequence(a, rest@_*)      => val aP = traverse(c, a)
                                       val bP = traverse(Sequence(c, aP), Sequence(rest: _*))
-                                      Sequence(aP, bP)//.flatten
+                                      Sequence(aP, bP).flatten
     case w@While(p, i, e, body)    => if(p.count > 0)
                                       {
                                         val (j, b) = infer(c, w)
@@ -236,10 +235,7 @@ package object PredicateAbstraction extends com.typesafe.scalalogging.LazyLoggin
         val a  = Assume(and(e, i,  j))
         bp = traverse(Sequence(c, h, a), b)
         val q  = norm(True(), Sequence(c, h, a, bp))
-//        //no havac uncomment below
-//        bp = traverse(Sequence(c, a), b)
-//        val q  = norm(True(), Sequence(c, a, bp))
-        val next = union(j, q, p)  //
+        val next = union(r, q, p)  //
         println("next is"  + next)
         println("   r is"  + r)
         if(r != next)
@@ -250,8 +246,10 @@ package object PredicateAbstraction extends com.typesafe.scalalogging.LazyLoggin
         logger.debug(s"infer at iteration $iteration current is $j")
       }while(keepLooping)
 
+      //val simplifiedR = SymPy.symplify(r)
+      //val invariant = booleanExpression2PredicateExpression(simplifiedR, p)
       (j, bp)
-
+      //(invariant, bp)
     case _ => sys.error("expect parm s to be a While")
   }
 
@@ -268,15 +266,23 @@ package object PredicateAbstraction extends com.typesafe.scalalogging.LazyLoggin
     * @param absDomain
     * @return
     */
-  def gamma(absDomain:AbstractDomain, p:Predicates):Expression =
+  def gamma(absDomain:AbstractDomain,
+            p:Predicates,
+            simplify:Boolean = true):Expression =
   {
-    var exp:Expression = True()
-    for(v <- absDomain)
+    if(simplify)
     {
-      exp = and(exp, booleanVector2PredicateExpression(v, p))
+      val s = SymPy.symplify(absDomain)
+      booleanExpression2PredicateExpression(s, p)
     }
+    else
+      abstractDomain2PredicateExpression(absDomain, p)
+  }
 
-    exp
+  def union(a:AbstractDomain, q:Expression, predicates: Predicates):AbstractDomain =
+  {
+    val r = abstractDomain2PredicateExpression(a, predicates)
+    union(r, q, predicates)
   }
 
   /**
@@ -289,7 +295,6 @@ package object PredicateAbstraction extends com.typesafe.scalalogging.LazyLoggin
   def union(r:Expression, q:Expression, predicates: Predicates):AbstractDomain =
   {
     var absDomain:List[Vector[Boolean]] = Nil
-    //var result:Expression = True()
     val combinationSize = scala.math.pow(2, predicates.count).toInt  // TODO: can have overflow problem
     for(i <- 0 until combinationSize)
     {
@@ -299,19 +304,18 @@ package object PredicateAbstraction extends com.typesafe.scalalogging.LazyLoggin
       val rExpr = implies(r, m)
       val expr = and(rExpr, qExpr)
 
-      if (True() == Z3.Validity.check(expr))
+      Z3.Validity.check(expr) match
       {
-        //result = and(result, m)
-        if(Nil != absDomain)
-          absDomain = absDomain ::: List(combination)
-        else
-          absDomain = List(combination)
-        println("union check rtn  True(): " + expr)
+        case Z3.Validity.Valid(_) =>
+          if (Nil != absDomain)
+            absDomain = absDomain ::: List(combination)
+          else
+            absDomain = List(combination)
+          println("union check rtn  True(): " + expr)
+        case _ =>
+          println("union check rtn False(): " + expr)
       }
-      else
-        println("union check rtn False(): " + expr)
     }
-    //result
     absDomain
   }
 
@@ -364,12 +368,13 @@ package object PredicateAbstraction extends com.typesafe.scalalogging.LazyLoggin
     */
   def booleanExpression2PredicateExpression(boolExp:Expression, p:Predicates):Expression =
   {
-    var s = boolExp.toString
-    for(idx <- 0 until p.count)
+    boolExp match
     {
-      s = s.replaceAll(s"p$idx", p(idx).toString)
+      case Variable(n, l, _)  => p(n.substring(1).toInt)
+      case Unary(op, e)       => Unary(op, booleanExpression2PredicateExpression(e, p))
+      case Binary(op, el, er) => Binary(op, booleanExpression2PredicateExpression(el, p),
+                                            booleanExpression2PredicateExpression(er, p))
     }
-    s
   }
 
   /**
@@ -380,7 +385,7 @@ package object PredicateAbstraction extends com.typesafe.scalalogging.LazyLoggin
     */
   def booleanVector2PredicateExpression(b:Vector[Boolean], p:Predicates):Expression =
   {
-    require(b.size == p.count, "unionX makeExpression, size of b != p.count")
+    require(b.size == p.count, "booleanVector2PredicateExpression, size of b != p.count")
     var expr:Expression = if(b(0)) p(0) else not(p(0))
     for(i <- 1 until p.count)
     {
@@ -388,4 +393,13 @@ package object PredicateAbstraction extends com.typesafe.scalalogging.LazyLoggin
     }
     expr
   }
+
+  def abstractDomain2PredicateExpression(a:AbstractDomain, p:Predicates):Expression = a match
+  {
+    case Nil => True()
+    case h :: rest => and(booleanVector2PredicateExpression(h, p),
+                          abstractDomain2PredicateExpression(rest, p))
+  }
+
+
 }

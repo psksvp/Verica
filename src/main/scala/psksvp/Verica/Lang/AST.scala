@@ -22,7 +22,7 @@ object Register
 /**
   * Created by psksvp on 11/04/2016.
   */
-abstract class Node(_children:List[Node])
+sealed abstract class Node(_children:List[Node])
 {
   private val uuid = "L" + java.util.UUID.randomUUID().toString().replace("-", "")
   def id = uuid
@@ -31,7 +31,7 @@ abstract class Node(_children:List[Node])
 }
 
 
-abstract class Operator(val symbol:String) extends Node(Nil)
+sealed abstract class Operator(val symbol:String) extends Node(Nil)
 
 case class Plus() extends Operator("+")
 case class Minus() extends Operator("-")
@@ -53,22 +53,22 @@ case class Or() extends Operator("""\/""")
 case class And() extends Operator("""/\""")
 case class Implies() extends Operator("->")
 
-abstract class Expression(children:List[Node]) extends Node(children)
+sealed abstract class Expression(children:List[Node]) extends Node(children)
 
 import scala.reflect.runtime.universe._
-abstract class Value[T:TypeTag](_value:T) extends Expression(Nil)
+sealed abstract class Value[T:TypeTag](_value:T) extends Expression(Nil)
 {
   def selfType:Type = typeOf[T]
   def value:T = _value
 }
 
 case class IntegerValue(v:Int) extends Value[Int](v)
-abstract class BooleanValue(v:Boolean) extends Value[Boolean](v)
+sealed abstract class BooleanValue(v:Boolean) extends Value[Boolean](v)
 
 case class True() extends BooleanValue(true)
 case class False() extends BooleanValue(false)
 
-abstract class TypeClass(name:String) extends Node(Nil)
+sealed abstract class TypeClass(name:String) extends Node(Nil)
 {
   override def toString=name
 }
@@ -85,7 +85,7 @@ case class Binary(operator: Operator,
                   exprLeft:Expression,
                   exprRight:Expression) extends Expression(List(operator, exprLeft, exprRight))
 
-abstract class VariableKind extends Node(Nil)
+sealed abstract class VariableKind extends Node(Nil)
 case class ArrayVariable() extends VariableKind
 case class ValueVariable() extends VariableKind
 
@@ -117,20 +117,20 @@ case class Predicates(exprs:Expression*) extends Node(exprs.toList)
 case class PredicatesAndInvariant(predicates: Predicates,
                                    invariant: Expression) extends Node(List(predicates, invariant))
 
-abstract class Statement(children:List[Node]) extends Node(children)
+sealed abstract class Statement(children:List[Node]) extends Node(children)
 case class VariableDeclaration(name:String, typeClass:TypeClass) extends Statement(Nil)
 case class Empty() extends Statement(Nil)
 case class Assignment(variable:Variable, expr:Expression) extends Statement(List(variable, expr))
 case class Return(expression:Expression) extends Statement(List(expression))
 
-abstract class VerificationStatment(val name:String,
-                                    val expression:Expression) extends Statement(List(expression))
+sealed abstract class VerificationStatment(val name:String,
+                                           val expression:Expression) extends Statement(List(expression))
 case class Assert(expr:Expression) extends VerificationStatment("assert", expr)
 case class Assume(expr:Expression) extends VerificationStatment("assume", expr)
 case class Ensure(expr:Expression) extends VerificationStatment("ensure", expr)
 
 // universal & existential  Quantifier
-abstract class Quantifier(vars:List[Variable], expr:Expression) extends Expression(vars ::: List(expr))
+sealed abstract class Quantifier(vars:List[Variable], expr:Expression) extends Expression(vars ::: List(expr))
 case class UniversalQuantifier(variables:List[Variable],
                                expression: Expression) extends Quantifier(variables, expression)
 case class ExistentialQuantifier(variables:List[Variable],

@@ -187,7 +187,7 @@ object Parser extends JavaTokenParsers with PackratParsers
     case exp  => Return(exp)
   }
 
-  lazy val varDecl:PackratParser[VariableDeclaration] = "local" ~> parameter ^^
+  lazy val varDecl:PackratParser[VariableDeclaration] = "var" ~> parameter ^^
   {
     case p => val decl = VariableDeclaration(p.name, p.typeClass)
               Register.register(decl)

@@ -157,10 +157,12 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
   {
     assignment match
     {
+      //case Assignment(v, Literal(r))   => Binary(Equal(), v, Literal(r))
       case Assignment(v, e)            =>
         val vP = Variable(v.name + "P", v.index, v.kind)
         val eq = equal(v, substituteVariable(v, inExp = e, withExp = vP))
         QE.solve(Exists(vP :: Nil), SuchThat(and(eq, substituteVariable(v, inExp = q, withExp = vP))))
+        //ExistentialQuantifier(vP :: Nil, and(eq, substituteVariable(v, inExp = q, withExp = vP)))
     }
   }
 
@@ -203,7 +205,7 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
     * "page 73"
     *
     * @param stmt
-    * @param q
+    * @param q is postcondition
     * @return
     */
   def wvc(stmt:Statement, q:Formular):Set[Formular] = stmt match
@@ -261,42 +263,47 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
     * @param function
     * @return
     */
-  def verify(function:Function):(Expression, Boolean) =
+  def verify(function:Function):Boolean =
   {
     val listOfpostCond = postConditionOf(function)
     if(Nil != listOfpostCond)
     {
       val listOfAssumption = assumptionOf(function)
-
       logger.trace(s"goint to verify function ${function.name} with post conds $listOfpostCond")
-      var resultExp:Expression = True()
       var resultVal = true
       for(vc <- wvc(function.body, and(listOfpostCond)))
       {
-        val checkResult = Validity.check(vc, listOfAssumption)
-        logger.debug(s"validity check of $vc is $checkResult")
-        resultExp = and(resultExp, checkResult)
-        resultVal = resultVal && (if(checkResult.isInstanceOf[True]) true else false)
+        Validity.check(vc, listOfAssumption) match
+        {
+          case Validity.Valid(_)   => logger.debug(s"validity check of $vc is true")
+                                      resultVal = resultVal && true
+          case Validity.Invalid(_) => logger.debug(s"validity check of $vc is false")
+                                      resultVal = resultVal && false
+        }
       }
-      (resultExp, resultVal)
+      resultVal
     }
     else
     {
       logger.debug(s"at verify, function ${function.name} has no post conditions")
-      (False(), false)
+      false
     }
   }
 
   def verify(w:While, lsAssume:List[Expression], lsPost:List[Expression]):Boolean =
   {
-    var result = true
+    var resultVal = true
     for(vc <- wvc(w, and(lsPost)))
     {
-      val checkResult = Validity.check(vc, lsAssume)
-      println("checking " + vc + " is " + checkResult)
-      result = result && (if(checkResult.isInstanceOf[True]) true else false)
+      Validity.check(vc, lsAssume) match
+      {
+        case Validity.Valid(_)   => logger.debug(s"validity check of $vc is true")
+                                    resultVal = resultVal && true
+        case Validity.Invalid(_) => logger.debug(s"validity check of $vc is false")
+                                    resultVal = resultVal && false
+      }
     }
-    result
+    resultVal
   }
 
   /**
@@ -314,5 +321,53 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
     }
 
     Sequence(doFlatten(aSeq):_*)
+  }
+
+  def simplify(minTerms:List[Int],
+               symbols:List[String]):List[List[Expression]] =
+  {
+    import psksvp.QuineMcCluskey._
+
+    def groupMinTerm(implicant:Implicant):List[Expression]=
+    {
+      val weights = (0 until symbols.length).map(1 << _).reverse
+      val varByWeight = (weights zip symbols).toMap
+
+      val varList = for(w <- weights) yield
+                    {
+                      if(!implicant.group.contains(w))
+                      {
+                        if ((implicant.minterm & w) != 0)
+                          Variable(varByWeight(w))     //varByWeight(w)
+                        else
+                          not(Variable(varByWeight(w))) //varByWeight(w) + "'"
+                      }
+                      else
+                        False()
+                    }
+
+      varList.filter(_ != False()).toList
+    }
+
+    val implicants = minTerms.sorted.sortBy(bitCount(_)).map(new Implicant(_))
+    val order = symbols.length
+    val primeImplicants = genImplicants(implicants, order).filter(_.prime)
+
+    val piTable = PITable.solve(primeImplicants, minTerms, symbols)
+    piTable.results.map(groupMinTerm(_)).toList
+  }
+
+  def toCNF(s:List[List[Expression]]):Expression = s match
+  {
+    case Nil       => sys.error("toCNF, Nil list was passed")
+    case l :: Nil  => or(l)
+    case l :: rest => and(or(l), toCNF(rest))
+  }
+
+  def toDNF(s:List[List[Expression]]):Expression = s match
+  {
+    case Nil       => sys.error("toDNF, Nil list was passed")
+    case l :: Nil  => and(l)
+    case l :: rest => or(and(l), toDNF(rest))
   }
 }
