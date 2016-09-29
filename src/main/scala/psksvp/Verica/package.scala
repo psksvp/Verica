@@ -323,8 +323,14 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
     Sequence(doFlatten(aSeq):_*)
   }
 
-  def simplify(minTerms:List[Int],
-               symbols:List[String]):List[List[Expression]] =
+  /**
+    *
+    * @param minTerms
+    * @param symbols
+    * @return
+    */
+  def booleanMinimize(minTerms:List[Int],
+                      symbols:List[String]):List[List[Expression]] =
   {
     import psksvp.QuineMcCluskey._
 
@@ -350,13 +356,17 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
     }
 
     val implicants = minTerms.sorted.sortBy(bitCount(_)).map(new Implicant(_))
-    val order = symbols.length
-    val primeImplicants = genImplicants(implicants, order).filter(_.prime)
+    val primeImplicants = genImplicants(implicants, symbols.length).filter(_.prime)
 
     val piTable = PITable.solve(primeImplicants, minTerms, symbols)
     piTable.results.map(groupMinTerm(_)).toList
   }
 
+  /**
+    *
+    * @param s
+    * @return
+    */
   def toCNF(s:List[List[Expression]]):Expression = s match
   {
     case Nil       => sys.error("toCNF, Nil list was passed")
@@ -364,6 +374,11 @@ package object Verica extends com.typesafe.scalalogging.LazyLogging
     case l :: rest => and(or(l), toCNF(rest))
   }
 
+  /**
+    *
+    * @param s
+    * @return
+    */
   def toDNF(s:List[List[Expression]]):Expression = s match
   {
     case Nil       => sys.error("toDNF, Nil list was passed")

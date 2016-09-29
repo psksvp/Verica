@@ -314,11 +314,14 @@ object Test
 
   def main(args:Array[String]):Unit=
   {
-    println(Validity.check("""x == 0 /\ y == 2 /\ ~(y >= 0)"""))
-    val e = simplify(List(0,1,2,3,4,7,6,8,11,13,15), List("p0", "p1", "p2", "p3"))
-    println(e)
-    println(toCNF(e))
-    println(toDNF(e))
+    val e1 = booleanMinimize(List(0,1,2,3,4,7,6,8,11,13,15), List("p0", "p1", "p2", "p3"))
+    println(e1)
+    println(toCNF(e1))
+    println(toDNF(e1))
+    val e2 = booleanMinimize(List(1,2,3), List("p0", "p1"))
+    println(e2)
+    println(toCNF(e2))
+    println(toDNF(e2))
 
     //println(QE.solve(Exists(Variable("x") :: Nil), SuchThat("x * 2 + y == 4")))
     //testSP
