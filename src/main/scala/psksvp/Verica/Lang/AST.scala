@@ -111,6 +111,7 @@ case class Predicates(exprs:Expression*) extends Node(exprs.toList)
 {
   def count = exprs.size
   def apply(index:Int) = exprs(index)
+  def toSymbols:List[String] = (for(i <- 0 until exprs.size) yield s"p$i").toList
   def toSet:Set[Expression] = exprs.toSet[Expression]
 }
 

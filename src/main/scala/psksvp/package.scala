@@ -3,26 +3,26 @@
   */
 package object psksvp
 {
-  def extractYoutubePlayListURLs(targetURL:String,
-                                 startMarker:String = "watch?v=",
-                                 endMarker:String = ";"): List[String] =
-  {
-    import scala.io.Source
-
-    val result = new scala.collection.mutable.ListBuffer[String]()
-    val src = Source.fromURL(targetURL).mkString
-
-    val vdoCodeList = extractString(src, startMarker, endMarker)
-    for(code <- vdoCodeList)
-    {
-      val url = "\"http://www.youtube.com/"+code+"\""
-      if(result.indexOf(url) < 0)
-      {
-        result.append(url)
-      }
-    }
-    result.toList
-  }
+//  def extractYoutubePlayListURLs(targetURL:String,
+//                                 startMarker:String = "watch?v=",
+//                                 endMarker:String = ";"): List[String] =
+//  {
+//    import scala.io.Source
+//
+//    val result = new scala.collection.mutable.ListBuffer[String]()
+//    val src = Source.fromURL(targetURL).mkString
+//
+//    val vdoCodeList = extractString(src, startMarker, endMarker)
+//    for(code <- vdoCodeList)
+//    {
+//      val url = "\"http://www.youtube.com/"+code+"\""
+//      if(result.indexOf(url) < 0)
+//      {
+//        result.append(url)
+//      }
+//    }
+//    result.toList
+//  }
 
 
   /**
@@ -92,7 +92,7 @@ package object psksvp
 
   def booleanVector(i:Int, bits:Int): Vector[Boolean] =
   {
-    require(i <= Integer.parseInt("1"*bits, 2), "psksvp.booleanArray(i, bits) bits is too small for i ")
+    require(i <= Integer.parseInt("1"*bits, 2), "psksvp.booleanVector(i, bits) bits is too small for i ")
     var result = scala.collection.immutable.Vector.empty[Boolean]
     val format = "%" + bits + "s"
     val binStr = String.format(format, Integer.toBinaryString(i)).replace(" ", "0")
@@ -135,5 +135,15 @@ package object psksvp
 
     (0 until count(xx)).toList.map(i => combination(xx, i))
   }
+
+  def push[T](ls:List[T], e:T):List[T] = e :: ls
+  def pop[T](ls:List[T]):List[T] = ls match
+  {
+    case Nil       => Nil
+    case h :: rest => rest
+  }
+  def top[T](s:List[T]):T = s.head
+
+  def enqueue[T](ls:List[T], e:T):List[T] = push[T](ls, e)
 }
 

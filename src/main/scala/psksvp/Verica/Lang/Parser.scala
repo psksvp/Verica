@@ -55,13 +55,15 @@ object Parser extends JavaTokenParsers with PackratParsers
 
   lazy val expressionList = repsep(expression, ",")
 
-  lazy val factor = "(" ~> expression <~ ")" |num|trueLiteral|falseLiteral|notExpr|notFunc|andFunc|orFunc|
+  lazy val factor = "(" ~> expression <~ ")" |num|trueLiteral|falseLiteral|pyTrue|pyFalse|notExpr|notFunc|andFunc|orFunc|
                                               arrayVariable|variableLength|invokeExp|z3pyLengthOfArray|
                                               forAll|exists|z3pySysGenVar|variable
 
   lazy val num = floatingPointNumber                    ^^ {t => IntegerValue(t.toInt) }
   lazy val trueLiteral = "true"                         ^^ {t => True()}
   lazy val falseLiteral = "false"                       ^^ {t => False()}
+  lazy val pyTrue = "True"                              ^^ {t => True()}
+  lazy val pyFalse = "False"                            ^^ {t => False()}
   lazy val notExpr = "~" ~> expression                  ^^ {t => Unary(Negation(), t)}
   lazy val notFunc = "Not" ~ "(" ~> expression <~ ")"        ^^ {t => Unary(Negation(), t)}
   lazy val andFunc = "And" ~ "(" ~> expressionList <~ ")"    ^^ {t => psksvp.Verica.and(t)}
