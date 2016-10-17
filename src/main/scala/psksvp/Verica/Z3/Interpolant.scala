@@ -12,16 +12,13 @@ object Interpolant
   import psksvp.Verica.Lang.Parser
   def compute(exprs:List[Expression]):List[Expression]=
   {
-    var vardecl = ""
-    for(exp <- exprs) // this does not remove duplicate variables
-    {
-      vardecl = vardecl + makeVariables(exp) + "\n"
-    }
+    val vars = for(e <- exprs) yield s"${makeVariables(e)}\n"
+    val decl = vars.distinct.reduce(_ + _)
     var exprls = pythonize(exprs)
     val code =
       s"""
          |from z3 import *
-         |$vardecl
+         |$decl
          |print(sequence_interpolant([$exprls]))
       """.stripMargin.trim
     val ret = psksvp.evalPython(code)
@@ -32,14 +29,13 @@ object Interpolant
   def checkTrace(S:List[Expression]):Satisfiable.CheckResult =
   {
     import psksvp.Verica._
-    def pair(In:Expression, Sn:Expression, Inext:Expression):Expression=implies(and(In, Sn), Inext)
+    def pair(In:Expression,
+             Sn:Expression,
+             Inext:Expression):Expression=implies(and(In, Sn), Inext)
 
     val I = True() :: compute(S) ::: List(False())
-    var e:Expression = True()
-    for(n <- (1 until S.length))
-    {
-      e = and(e, pair(I(n), S(n), I(n + 1)))
-    }
+    val e:Expression = (for(n <- (1 until S.length)) yield pair(I(n), S(n), I(n + 1))).reduce(and(_, _))
+
     Satisfiable.check(e)
   }
 }

@@ -346,13 +346,8 @@ object Test
 
   def main(args:Array[String]):Unit=
   {
-    val g = Z3.Satisfiable.check(
-      """
-        |true /\
-        |((~(i >= 1000) /\ (i >= 1000)) -> false) /\
-        |((false /\ (i>1000)) -> false)
-      """.stripMargin)
-    println(g)
+    //val exprs:List[Expression] = List("x == 0", "j == 0", " x >= 100", "~(j == 0)")
+    //al exprs:List[Expression] = List("x1==0", "y1==0", "x2=x1+1", "y1 != 0")
     val exprs:List[Expression] = List("i==0", "i>=1000", "i > 1000")
     println(Z3.Interpolant.compute(exprs))
     println(Z3.Interpolant.checkTrace(exprs))
