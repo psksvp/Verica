@@ -14,7 +14,7 @@ object Interpolant
   {
     val vars = for(e <- exprs) yield s"${makeVariables(e)}\n"
     val decl = vars.distinct.reduce(_ + _)
-    var exprls = pythonize(exprs)
+    val exprls = pythonize(exprs)
     val code =
       s"""
          |from z3 import *

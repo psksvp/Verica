@@ -334,9 +334,24 @@ object Test
         |}
       """.stripMargin
 
+    val fz:Function =
+      """
+        |function aFunc(n:Integer):Integer
+        |[assume(N > 0)]
+        |{
+        |  i := 0
+        |  x := i
+        |  while(i < 50, [,true])
+        |  {
+        |    i := i + 1
+        |    x := x + i
+        |  }
+        |}
+      """.stripMargin
 
-    println(fy)
-    val f2 = traverse(fy)
+
+    println(fz)
+    val f2 = traverse(fz)
     println(f2)
     //println(verify(f2))
   }
@@ -346,9 +361,13 @@ object Test
 
   def main(args:Array[String]):Unit=
   {
-    //val exprs:List[Expression] = List("x == 0", "j == 0", " x >= 100", "~(j == 0)")
+    val pyListerner = new psksvp.Python.Listener
+    pyListerner.start
+    val start = System.nanoTime()
+
+    val exprs:List[Expression] = List("x == 0", "j == 0", " ~(x < 100)", "j != 0")
     //al exprs:List[Expression] = List("x1==0", "y1==0", "x2=x1+1", "y1 != 0")
-    val exprs:List[Expression] = List("i==0", "i>=1000", "i > 1000")
+    //val exprs:List[Expression] = List("i==0", "i>=1000", "i > 1000")
     println(Z3.Interpolant.compute(exprs))
     println(Z3.Interpolant.checkTrace(exprs))
 //    val e1 = booleanMinimize(List(0,1,2,3,4,7,6,8,11,13,15), List("p0", "p1", "p2", "p3"))
@@ -369,7 +388,7 @@ object Test
     //testVerifyFindMax
 
     //testInferOnTrace
-    //testAnotherTrace
+    testAnotherTrace
     //hardCode
 
     //hardCode2
@@ -379,6 +398,8 @@ object Test
 
     //val t:Expression = """true /\ (p1 \/ ~p2) /\ (p1 \/ p2)"""
     //println(SymPy.symplify(t))
+    println(System.nanoTime() - start)
+    pyListerner.stop
   }
 
   def hardCode2:Unit=

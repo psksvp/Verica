@@ -57,13 +57,16 @@ package object psksvp
 
   def evalPython(src:String, python:String="/usr/bin/python"):String=
   {
-    import psksvp.FileSystem.SimpleFileIO
-    val tmpDir = System.getProperty("java.io.tmpdir")
-    val srcFileName = s"$tmpDir${psksvp.gensym()}.py"
-    SimpleFileIO.writeStringToTextFile(src, srcFileName)
-    import sys.process._
+//    import psksvp.FileSystem.SimpleFileIO
+//    val tmpDir = System.getProperty("java.io.tmpdir")
+//    val srcFileName = s"$tmpDir${psksvp.gensym()}.py"
+//    SimpleFileIO.writeStringToTextFile(src, srcFileName)
+//    import sys.process._
+//
+//    (Seq(python, srcFileName).!!).trim
 
-    (Seq(python, srcFileName).!!).trim
+    import psksvp.Python
+    Python.execute(src)
   }
 
   def removeDuplicate[T](ls:List[T]):List[T] =
