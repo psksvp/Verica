@@ -76,7 +76,8 @@ class Listener(python:String="/usr/bin/python",
       """.stripMargin
 
       import psksvp.FileSystem.SimpleFileIO
-      val tmpDir = System.getProperty("java.io.tmpdir")
+      val tmpProp = System.getProperty("java.io.tmpdir")
+      val tmpDir = if(tmpProp.last != '/') tmpProp + '/' else tmpProp
       val srcFileName = s"$tmpDir${psksvp.gensym()}.py"
       SimpleFileIO.writeStringToTextFile(listener, srcFileName)
       import sys.process._
