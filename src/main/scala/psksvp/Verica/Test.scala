@@ -324,9 +324,9 @@ object Test
     val fy:Function =
       """
         |function aFunc(n:Integer):Integer
-        |[assume(N > 0)]
+        |[assume(N > 0), ensure(j >= 1)]
         |{
-        |  j := N
+        |  j := 0
         |  while(j < N, [,true])
         |  {
         |    j := j + 1
@@ -340,20 +340,20 @@ object Test
         |[assume(N > 0)]
         |{
         |  i := 0
-        |  x := i
-        |  while(i < 50, [,true])
+        |  x := 0
+        |  while(i < N, [,true])
         |  {
         |    i := i + 1
-        |    x := x + i
+        |    x := x - i
         |  }
         |}
       """.stripMargin
 
 
-    println(fz)
-    val f2 = traverse(fz)
+    println(fy)
+    val f2 = traverse(fy)
     println(f2)
-    //println(verify(f2))
+    println(verify(f2))
   }
 
 
@@ -361,8 +361,8 @@ object Test
 
   def main(args:Array[String]):Unit=
   {
-    val pyListerner = new psksvp.Python.Listener
-    pyListerner.start
+    //val pyListerner = new psksvp.Python.Listener
+    //pyListerner.start
     val start = System.nanoTime()
 
     val exprs:List[Expression] = List("x == 0", "j == 0", " ~(x < 100)", "j != 0")
@@ -399,7 +399,7 @@ object Test
     //val t:Expression = """true /\ (p1 \/ ~p2) /\ (p1 \/ p2)"""
     //println(SymPy.symplify(t))
     println(System.nanoTime() - start)
-    pyListerner.stop
+    //pyListerner.stop
   }
 
   def hardCode2:Unit=

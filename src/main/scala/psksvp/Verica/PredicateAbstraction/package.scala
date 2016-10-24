@@ -193,8 +193,7 @@ package object PredicateAbstraction extends com.typesafe.scalalogging.LazyLoggin
     }
 
     val old = traverseLocalContext(cs)
-    var result:List[Predicate] = Nil //List(w.expr)
-    for(t <- targets(w.body))
+    val result = for(t <- targets(w.body)) yield
     {
       val e:List[Expression] = t match
       {
@@ -202,12 +201,13 @@ package object PredicateAbstraction extends com.typesafe.scalalogging.LazyLoggin
                                                                       List(s"$tn <= ${old(t)}",
                                                                            s"$tn >= ${old(t)}")
 
-        case Variable(_, _, ArrayVariable())                       => List()
-        case _                                                     => List()
+        case Variable(_, _, ArrayVariable())                       => Nil
+        case _                                                     => Nil
       }
-      result = result ::: e
+      e
     }
-    Predicates(result:_*)
+
+    Predicates(w.expr :: result.flatten:_*)
   }
 
 
