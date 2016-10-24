@@ -89,20 +89,14 @@ package object Z3
     */
   def makeVariables(s:Seq[Variable]):String =
   {
-    var decl = ""
-    for(v <- s)
-    {
-      decl = decl + makeVariable(v) + "\n"
-    }
-    decl.trim
+    val decl = for(v <- s) yield makeVariable(v) + "\n"
+    decl.reduce(_ + _).trim
   }
+
   def makeVariables(expr:Expression):String =
   {
-    var result = ""
-    for(v <- psksvp.removeDuplicate(listOfVariablesIn(expr)))
-      result = result.concat(makeVariable(v) + "\n")
-
-    result.trim
+    val result = for(v <- psksvp.removeDuplicate(listOfVariablesIn(expr))) yield makeVariable(v) + "\n"
+    result.reduce(_ + _).trim
   }
 
   def makeAssumptions(modelName:String, ls:List[Expression]):String = ls match
